@@ -30,8 +30,15 @@ AltSuite is a self-hosted platform for managing and monitoring your FOSS install
 
 ### Development
 
+#### Frontend:
 ```bash
-## TODO:
+cd frontend
+npm run dev
+```
+
+#### API:
+```
+go run ...... idr ill fill in later
 ```
 
 ### Production Deployment
