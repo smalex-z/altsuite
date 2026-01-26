@@ -1,0 +1,16 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+altsuite
+api
+
+*.test
+
+*.out
+
+vendor/
+
+go.work

@@ -28,17 +28,40 @@ AltSuite is a self-hosted platform for managing and monitoring your FOSS install
 
 ## Quick Start
 
-### Development
+### Prerequisites
+
+Ensure you have the following installed on your system: (Commands for Ubuntu)
+- **Go 1.21+**: `sudo apt install golang-go`
+- **Node.js 18+**: [Download](https://nodejs.org/) or use `nvm`
+
+### Development:
 
 #### Frontend:
+Install Packages first:
+
+```bash
+cd frontend
+npm install
+```
+
+Start the server
 ```bash
 cd frontend
 npm run dev
 ```
 
 #### API:
+Install Packages first:
+
+```bash
+cd api
+go mod download
 ```
-go run ...... idr ill fill in later
+
+Start the server
+```
+cd api
+go run main.go
 ```
 
 ### Production Deployment
