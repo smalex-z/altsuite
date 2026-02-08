@@ -66,9 +66,54 @@ go run main.go
 
 ### Production Deployment
 
+**Prerequisites:**
+- Ubuntu/Debian Linux system
+- Go 1.21+ installed (for building)
+- Node.js 18+ installed (for building frontend)
+
+**Build Steps:**
+
 ```bash
-## TODO:
+# 1. Build the Go API
+cd api
+go build -o altsuite main.go privileged.go
+
+# 2. Build the Frontend
+cd ../frontend
+npm install
+npm run build
+
+# 3. Run the installation script
+cd ../deploy
+sudo ./install.sh
 ```
+
+**What the installer does:**
+- Creates `altsuite` system user
+- Installs sudoers configuration for passwordless privileged operations
+- Copies binaries to `/opt/altsuite`
+- Creates and enables systemd service
+- Sets up proper permissions and security
+
+**Managing the Service:**
+
+```bash
+# Start AltSuite
+sudo systemctl start altsuite
+
+# Check status
+sudo systemctl status altsuite
+
+# View logs
+sudo journalctl -u altsuite -f
+
+# Stop service
+sudo systemctl stop altsuite
+```
+
+The API will be available at `http://localhost:8080`
+
+**Security Note:** The installation configures passwordless sudo for specific operations (systemctl, apt-get, docker) limited to the `altsuite` user only. See `/etc/sudoers.d/altsuite` after installation.
 
 ## Requirements
 

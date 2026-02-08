@@ -1,0 +1,184 @@
+/***************************************************************************************************
+
+Privileged.go - Handles operations that require sudo privileges, such as managing systemd services 
+and apt packages. This file defines the PrivilegedOps struct and its methods for executing
+privileged commands securely.
+
+***************************************************************************************************/
+
+
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os/exec"
+	"regexp"
+	"strings"
+)
+
+// Handles operations that require sudo privileges
+type PrivilegedOps struct {
+	// validating systemd service and package names
+	validServiceName *regexp.Regexp
+	validPackageName *regexp.Regexp
+}
+
+// New PrivilegedOps instance
+func NewPrivilegedOps() *PrivilegedOps {
+	return &PrivilegedOps{
+		// Alphanumeric, hyphens, underscores, and dots only
+		validServiceName: regexp.MustCompile(`^[a-zA-Z0-9\-_.@]+$`),
+		validPackageName: regexp.MustCompile(`^[a-zA-Z0-9\-_.+]+$`),
+	}
+}
+
+
+// ========================= Systemctl Operations =========================
+
+// SystemctlOperation represents a systemctl command
+type SystemctlOperation string
+
+const (
+	SystemctlStart    SystemctlOperation = "start"
+	SystemctlStop     SystemctlOperation = "stop"
+	SystemctlRestart  SystemctlOperation = "restart"
+	SystemctlStatus   SystemctlOperation = "status"
+	SystemctlEnable   SystemctlOperation = "enable"
+	SystemctlDisable  SystemctlOperation = "disable"
+)
+
+// Execute systemctl command
+func (p *PrivilegedOps) SystemctlCommand(operation SystemctlOperation, serviceName string) (string, error) {
+	if !p.validServiceName.MatchString(serviceName) {
+		return "", errors.New("invalid service name: contains forbidden characters")
+	}
+
+	// Execute command
+	cmd := exec.Command("sudo", "systemctl", string(operation), serviceName)
+	output, err := cmd.CombinedOutput()
+	
+	if err != nil {
+		return string(output), fmt.Errorf("systemctl %s %s failed: %w - %s", operation, serviceName, err, string(output))
+	}
+
+	return string(output), nil
+}
+
+// GetServiceStatus checks if a service is running
+func (p *PrivilegedOps) GetServiceStatus(serviceName string) (bool, error) {
+	output, err := p.SystemctlCommand(SystemctlStatus, serviceName)
+	
+	// systemctl status returns non-zero exit code if service is not running
+	isRunning := strings.Contains(output, "Active: active (running)")
+	
+	if strings.Contains(output, "could not be found") {
+		return false, fmt.Errorf("service %s not found", serviceName)
+	}
+	
+	return isRunning, err
+}
+
+
+// ========================= Apt Operations =========================
+
+// AptOperation represents an apt-get command
+type AptOperation string
+
+const (
+	AptUpdate  AptOperation = "update"
+	AptInstall AptOperation = "install"
+	AptRemove  AptOperation = "remove"
+	AptUpgrade AptOperation = "upgrade"
+)
+
+// Execute apt-get command with sudo
+func (p *PrivilegedOps) AptCommand(operation AptOperation, packages ...string) (string, error) {
+	for _, pkg := range packages {
+		if !p.validPackageName.MatchString(pkg) {
+			return "", fmt.Errorf("invalid package name: %s", pkg)
+		}
+	}
+
+	// Build command
+	args := []string{"apt-get", string(operation), "-y"}
+	args = append(args, packages...)
+	
+	cmd := exec.Command("sudo", args...)
+	output, err := cmd.CombinedOutput()
+	
+	if err != nil {
+		return string(output), fmt.Errorf("apt-get %s failed: %w - %s", operation, err, string(output))
+	}
+
+	return string(output), nil
+}
+
+// Returns a list of installed packages
+func (p *PrivilegedOps) ListInstalledPackages() ([]string, error) {
+	cmd := exec.Command("dpkg", "-l")
+	output, err := cmd.CombinedOutput()
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to list packages: %w", err)
+	}
+
+	// Parse dpkg output
+	lines := strings.Split(string(output), "\n")
+	var packages []string
+	
+	for _, line := range lines {
+		if strings.HasPrefix(line, "ii") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				packages = append(packages, fields[1])
+			}
+		}
+	}
+
+	return packages, nil
+}
+
+// GetPackageInfo returns information about an installed package
+func (p *PrivilegedOps) GetPackageInfo(packageName string) (string, error) {
+	if !p.validPackageName.MatchString(packageName) {
+		return "", fmt.Errorf("invalid package name: %s", packageName)
+	}
+
+	cmd := exec.Command("dpkg", "-s", packageName)
+	output, err := cmd.CombinedOutput()
+	
+	if err != nil {
+		return string(output), fmt.Errorf("package %s not found: %w", packageName, err)
+	}
+
+	return string(output), nil
+}
+
+
+// ========================= Docker Operations =========================
+
+
+// DockerCommand executes a docker command with sudo
+func (p *PrivilegedOps) DockerCommand(args ...string) (string, error) {
+	for _, arg := range args {
+		if strings.Contains(arg, ";") || strings.Contains(arg, "|") || strings.Contains(arg, "&") {
+			return "", errors.New("invalid characters in docker command")
+		}
+	}
+
+	cmdArgs := append([]string{"docker"}, args...)
+	cmd := exec.Command("sudo", cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	
+	if err != nil {
+		return string(output), fmt.Errorf("docker command failed: %w - %s", err, string(output))
+	}
+
+	return string(output), nil
+}
+
+// ListDockerContainers returns a list of running Docker containers
+func (p *PrivilegedOps) ListDockerContainers() (string, error) {
+	return p.DockerCommand("ps", "--format", "{{.Names}}\t{{.Status}}\t{{.Image}}")
+}
