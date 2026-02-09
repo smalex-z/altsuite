@@ -1,0 +1,21 @@
+# AltSuite - Allow management of systemd services
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl start *
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl stop *
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl restart *
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl status *
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl enable *
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl disable *
+altsuite ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload
+
+# Package management (Ubuntu/Debian)
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/apt-get update
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/apt-get install *
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/apt-get upgrade *
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/apt-get remove *
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/apt list *
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/dpkg -l *
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/dpkg -s *
+
+# Docker operations (if needed)
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/docker
+altsuite ALL=(ALL) NOPASSWD: /usr/bin/docker-compose
