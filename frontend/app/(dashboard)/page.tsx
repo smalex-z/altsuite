@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Cpu, HardDrive, Activity } from "lucide-react";
+import { getCurrentMetrics, getMetricsHistory } from "@/lib/api";
 
 interface SystemMetrics {
   timestamp: string;
@@ -19,55 +20,86 @@ interface SystemMetrics {
   network: number;
 }
 
+type TimeRange = "minute" | "hour" | "day" | "week" | "month";
+
 export default function OverviewPage() {
-  const [metrics, setMetrics] = useState<SystemMetrics[]>([
-    { timestamp: "10:00", cpu: 25, memory: 45, network: 12 },
-    { timestamp: "10:05", cpu: 32, memory: 48, network: 15 },
-    { timestamp: "10:10", cpu: 28, memory: 46, network: 18 },
-    { timestamp: "10:15", cpu: 35, memory: 50, network: 14 },
-    { timestamp: "10:20", cpu: 30, memory: 49, network: 20 },
-    { timestamp: "10:25", cpu: 38, memory: 52, network: 16 },
-    { timestamp: "10:30", cpu: 33, memory: 51, network: 19 },
-  ]);
+  const [metrics, setMetrics] = useState<SystemMetrics[]>([]);
+  const [timeRange, setTimeRange] = useState<TimeRange>("hour");
 
   const [currentStats, setCurrentStats] = useState({
-    cpu: 33,
-    memory: 51,
-    network: 19,
-    disk: 42,
+    cpu: 0,
+    memory: 0,
+    network: 0,
+    disk: 0,
   });
 
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch current metrics
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newCpu = Math.floor(Math.random() * 20) + 25;
-      const newMemory = Math.floor(Math.random() * 15) + 45;
-      const newNetwork = Math.floor(Math.random() * 15) + 10;
-      const now = new Date();
-      const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+    const fetchCurrentMetrics = async () => {
+      try {
+        const data = await getCurrentMetrics();
+        setCurrentStats({
+          cpu: data.cpu,
+          memory: data.memory,
+          network: data.network,
+          disk: data.disk,
+        });
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch current metrics:", err);
+        setError("Failed to fetch current metrics");
+      }
+    };
 
-      setMetrics((prev) => {
-        const updated = [
-          ...prev.slice(-6),
-          { timestamp, cpu: newCpu, memory: newMemory, network: newNetwork },
-        ];
-        return updated;
-      });
-
-      setCurrentStats({
-        cpu: newCpu,
-        memory: newMemory,
-        network: newNetwork,
-        disk: Math.floor(Math.random() * 10) + 38,
-      });
-    }, 5000);
+    fetchCurrentMetrics();
+    const interval = setInterval(fetchCurrentMetrics, 5000);
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch historical metrics on mount and when timeRange changes
+  useEffect(() => {
+    const fetchHistoricalMetrics = async () => {
+      try {
+        const data = await getMetricsHistory(timeRange);
+        const formattedMetrics = data.metrics.map((m) => {
+          const date = new Date(m.timestamp);
+          let timestamp: string;
+          
+          if (timeRange === "minute" || timeRange === "hour") {
+            timestamp = `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
+          } else if (timeRange === "day") {
+            timestamp = `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
+          } else {
+            timestamp = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
+          }
+
+          return {
+            timestamp,
+            cpu: m.cpu,
+            memory: m.memory,
+            network: m.network,
+          };
+        });
+        setMetrics(formattedMetrics);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch historical metrics:", err);
+        setError("Failed to fetch historical metrics");
+      }
+    };
+
+    fetchHistoricalMetrics();
+    const interval = setInterval(fetchHistoricalMetrics, 5000);
+    return () => clearInterval(interval);
+  }, [timeRange]);
+
   const statCards = [
-    { label: "CPU Usage", value: `${currentStats.cpu}%`, icon: Cpu, color: "blue" },
-    { label: "Memory", value: `${currentStats.memory}%`, icon: HardDrive, color: "purple" },
-    { label: "Network", value: `${currentStats.network} MB/s`, icon: Activity, color: "green" },
-    { label: "Disk Usage", value: `${currentStats.disk}%`, icon: HardDrive, color: "orange" },
+    { label: "CPU Usage", value: `${currentStats.cpu.toFixed(1)}%`, icon: Cpu, color: "blue" },
+    { label: "Memory", value: `${currentStats.memory.toFixed(1)}%`, icon: HardDrive, color: "purple" },
+    { label: "Network", value: `${currentStats.network.toFixed(2)} MB/s`, icon: Activity, color: "green" },
+    { label: "Disk Usage", value: `${currentStats.disk.toFixed(1)}%`, icon: HardDrive, color: "orange" },
   ];
 
   const colorClasses: Record<string, string> = {
@@ -76,6 +108,14 @@ export default function OverviewPage() {
     green: "bg-green-50 text-green-600",
     orange: "bg-orange-50 text-orange-600",
   };
+
+  const timeRanges: { value: TimeRange; label: string }[] = [
+    { value: "minute", label: "Last Minute" },
+    { value: "hour", label: "Last Hour" },
+    { value: "day", label: "Last Day" },
+    { value: "week", label: "Last Week" },
+    { value: "month", label: "Last Month" },
+  ];
 
   const installedApps = [
     { name: "Mattermost", status: "running", users: 42 },
@@ -91,6 +131,11 @@ export default function OverviewPage() {
         <p className="text-gray-600">
           Real-time monitoring of your self-hosted infrastructure
         </p>
+        {error && (
+          <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+            {error}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -110,6 +155,26 @@ export default function OverviewPage() {
             <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Time Range Selector */}
+      <div className="mb-6 flex items-center gap-2">
+        <span className="text-sm font-medium text-gray-700">Time Range:</span>
+        <div className="flex gap-2">
+          {timeRanges.map((range) => (
+            <button
+              key={range.value}
+              onClick={() => setTimeRange(range.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                timeRange === range.value
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

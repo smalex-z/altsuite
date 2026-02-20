@@ -31,5 +31,55 @@ export async function serviceAction(serviceName: string, action: "start" | "stop
   return res.json();
 }
 
+// System metrics
+export interface SystemMetric {
+  timestamp: string;
+  cpu: number;
+  memory: number;
+  network: number;
+  disk: number;
+}
+
+export async function getCurrentMetrics(): Promise<SystemMetric> {
+  if (!API_BASE) {
+    return {
+      timestamp: new Date().toISOString(),
+      cpu: Math.random() * 50 + 20,
+      memory: Math.random() * 30 + 40,
+      network: Math.random() * 20 + 5,
+      disk: Math.random() * 20 + 30,
+    };
+  }
+  const res = await fetch(`${API_BASE}/api/metrics/current`);
+  if (!res.ok) throw new Error("Failed to fetch current metrics");
+  return res.json();
+}
+
+export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week" | "month"): Promise<{
+  range: string;
+  metrics: Array<{ timestamp: string; cpu: number; memory: number; network: number }>;
+}> {
+  if (!API_BASE) {
+    // Return mock data
+    const now = Date.now();
+    const interval = range === "minute" ? 5000 : range === "hour" ? 60000 : 300000;
+    const count = range === "minute" ? 12 : range === "hour" ? 60 : 20;
+    
+    return {
+      range,
+      metrics: Array.from({ length: count }, (_, i) => ({
+        timestamp: new Date(now - (count - i) * interval).toISOString(),
+        cpu: Math.random() * 30 + 20,
+        memory: Math.random() * 20 + 40,
+        network: Math.random() * 15 + 5,
+      })),
+    };
+  }
+  
+  const res = await fetch(`${API_BASE}/api/metrics/history?range=${range}`);
+  if (!res.ok) throw new Error("Failed to fetch metrics history");
+  return res.json();
+}
+
 // Add more API functions here as backend endpoints are ready:
-// getSystemMetrics(), getInstalledPackages(), startInstallation(), getInstallLogs(), etc.
+// getInstalledPackages(), startInstallation(), getInstallLogs(), etc.
