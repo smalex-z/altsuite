@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Play,
   Square,
@@ -10,10 +10,12 @@ import {
   FileText,
   RotateCcw,
 } from "lucide-react";
+import { getMockAppDockerContainers } from "@/lib/api";
 
 interface AppData {
   id: string;
   name: string;
+  dockerContainerName?: string;
   status: "running" | "stopped";
   version: string;
   replaces: string;
@@ -87,6 +89,19 @@ export default function InstalledAppsPage() {
   const [apps, setApps] = useState<AppData[]>(MOCK_APPS);
   const [logViewerApp, setLogViewerApp] = useState<string | null>(null);
   const [configApp, setConfigApp] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadMockAppContainers = async () => {
+      try {
+        const containers = await getMockAppDockerContainers(MOCK_APPS);
+        console.log("[altsuite] mock app docker containers", containers);
+      } catch (error) {
+        console.error("Failed to load docker containers from Go API", error);
+      }
+      };
+    console.log("Loading mock app docker containers from Go API...");
+    void loadMockAppContainers();
+  }, []);
 
   const toggleAppStatus = (id: string) => {
     setApps((prev) =>

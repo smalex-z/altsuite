@@ -1,11 +1,10 @@
 /***************************************************************************************************
 
-Privileged.go - Handles operations that require sudo privileges, such as managing systemd services 
+Privileged.go - Handles operations that require sudo privileges, such as managing systemd services
 and apt packages. This file defines the PrivilegedOps struct and its methods for executing
 privileged commands securely.
 
 ***************************************************************************************************/
-
 
 package main
 
@@ -33,19 +32,18 @@ func NewPrivilegedOps() *PrivilegedOps {
 	}
 }
 
-
 // ========================= Systemctl Operations =========================
 
 // SystemctlOperation represents a systemctl command
 type SystemctlOperation string
 
 const (
-	SystemctlStart    SystemctlOperation = "start"
-	SystemctlStop     SystemctlOperation = "stop"
-	SystemctlRestart  SystemctlOperation = "restart"
-	SystemctlStatus   SystemctlOperation = "status"
-	SystemctlEnable   SystemctlOperation = "enable"
-	SystemctlDisable  SystemctlOperation = "disable"
+	SystemctlStart   SystemctlOperation = "start"
+	SystemctlStop    SystemctlOperation = "stop"
+	SystemctlRestart SystemctlOperation = "restart"
+	SystemctlStatus  SystemctlOperation = "status"
+	SystemctlEnable  SystemctlOperation = "enable"
+	SystemctlDisable SystemctlOperation = "disable"
 )
 
 // Execute systemctl command
@@ -57,7 +55,7 @@ func (p *PrivilegedOps) SystemctlCommand(operation SystemctlOperation, serviceNa
 	// Execute command
 	cmd := exec.Command("sudo", "systemctl", string(operation), serviceName)
 	output, err := cmd.CombinedOutput()
-	
+
 	if err != nil {
 		return string(output), fmt.Errorf("systemctl %s %s failed: %w - %s", operation, serviceName, err, string(output))
 	}
@@ -68,17 +66,16 @@ func (p *PrivilegedOps) SystemctlCommand(operation SystemctlOperation, serviceNa
 // GetServiceStatus checks if a service is running
 func (p *PrivilegedOps) GetServiceStatus(serviceName string) (bool, error) {
 	output, err := p.SystemctlCommand(SystemctlStatus, serviceName)
-	
+
 	// systemctl status returns non-zero exit code if service is not running
 	isRunning := strings.Contains(output, "Active: active (running)")
-	
+
 	if strings.Contains(output, "could not be found") {
 		return false, fmt.Errorf("service %s not found", serviceName)
 	}
-	
+
 	return isRunning, err
 }
-
 
 // ========================= Apt Operations =========================
 
@@ -103,10 +100,10 @@ func (p *PrivilegedOps) AptCommand(operation AptOperation, packages ...string) (
 	// Build command
 	args := []string{"apt-get", string(operation), "-y"}
 	args = append(args, packages...)
-	
+
 	cmd := exec.Command("sudo", args...)
 	output, err := cmd.CombinedOutput()
-	
+
 	if err != nil {
 		return string(output), fmt.Errorf("apt-get %s failed: %w - %s", operation, err, string(output))
 	}
@@ -118,7 +115,7 @@ func (p *PrivilegedOps) AptCommand(operation AptOperation, packages ...string) (
 func (p *PrivilegedOps) ListInstalledPackages() ([]string, error) {
 	cmd := exec.Command("dpkg", "-l")
 	output, err := cmd.CombinedOutput()
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to list packages: %w", err)
 	}
@@ -126,7 +123,7 @@ func (p *PrivilegedOps) ListInstalledPackages() ([]string, error) {
 	// Parse dpkg output
 	lines := strings.Split(string(output), "\n")
 	var packages []string
-	
+
 	for _, line := range lines {
 		if strings.HasPrefix(line, "ii") {
 			fields := strings.Fields(line)
@@ -147,7 +144,7 @@ func (p *PrivilegedOps) GetPackageInfo(packageName string) (string, error) {
 
 	cmd := exec.Command("dpkg", "-s", packageName)
 	output, err := cmd.CombinedOutput()
-	
+
 	if err != nil {
 		return string(output), fmt.Errorf("package %s not found: %w", packageName, err)
 	}
@@ -155,9 +152,7 @@ func (p *PrivilegedOps) GetPackageInfo(packageName string) (string, error) {
 	return string(output), nil
 }
 
-
 // ========================= Docker Operations =========================
-
 
 // DockerCommand executes a docker command with sudo
 func (p *PrivilegedOps) DockerCommand(args ...string) (string, error) {
@@ -167,15 +162,20 @@ func (p *PrivilegedOps) DockerCommand(args ...string) (string, error) {
 		}
 	}
 
-	cmdArgs := append([]string{"docker"}, args...)
-	cmd := exec.Command("sudo", cmdArgs...)
+	cmd := exec.Command("docker", args...)
 	output, err := cmd.CombinedOutput()
-	
-	if err != nil {
-		return string(output), fmt.Errorf("docker command failed: %w - %s", err, string(output))
+	if err == nil {
+		return string(output), nil
 	}
 
-	return string(output), nil
+	cmdArgs := append([]string{"docker"}, args...)
+	sudoCmd := exec.Command("sudo", append([]string{"-n"}, cmdArgs...)...)
+	sudoOutput, sudoErr := sudoCmd.CombinedOutput()
+	if sudoErr == nil {
+		return string(sudoOutput), nil
+	}
+
+	return string(output) + string(sudoOutput), fmt.Errorf("docker command failed without sudo (%v) and with non-interactive sudo (%v). configure docker permissions or sudoers NOPASSWD for this user", err, sudoErr)
 }
 
 // ListDockerContainers returns a list of running Docker containers
