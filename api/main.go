@@ -42,16 +42,16 @@ func main() {
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/health", healthHandler).Methods("GET")
-	
+
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
 	api.HandleFunc("/services/action", serviceActionHandler).Methods("POST")
-	
+
 	// Package management endpoints
 	api.HandleFunc("/packages", listPackagesHandler).Methods("GET")
 	api.HandleFunc("/packages/{name}", getPackageInfoHandler).Methods("GET")
 	api.HandleFunc("/packages/install", installPackageHandler).Methods("POST")
-	
+
 	// Docker endpoints (if Docker is installed)
 	api.HandleFunc("/docker/containers", listDockerContainersHandler).Methods("GET")
 
@@ -81,12 +81,12 @@ func getServiceStatusHandler(w http.ResponseWriter, r *http.Request) {
 	serviceName := vars["name"]
 
 	isRunning, err := privOps.GetServiceStatus(serviceName)
-	
+
 	response := ServiceStatusResponse{
 		ServiceName: serviceName,
 		IsRunning:   isRunning,
 	}
-	
+
 	if err != nil {
 		response.Error = err.Error()
 	}
@@ -121,12 +121,12 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	output, err := privOps.SystemctlCommand(operation, req.ServiceName)
-	
+
 	response := ServiceStatusResponse{
 		ServiceName: req.ServiceName,
 		Output:      output,
 	}
-	
+
 	if err != nil {
 		response.Error = err.Error()
 		w.WriteHeader(http.StatusInternalServerError)
@@ -139,7 +139,7 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 // Handler for listing installed packages
 func listPackagesHandler(w http.ResponseWriter, r *http.Request) {
 	packages, err := privOps.ListInstalledPackages()
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -160,7 +160,7 @@ func getPackageInfoHandler(w http.ResponseWriter, r *http.Request) {
 	packageName := vars["name"]
 
 	info, err := privOps.GetPackageInfo(packageName)
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -175,7 +175,7 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Packages []string `json:"packages"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -186,12 +186,12 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := privOps.AptCommand(AptInstall, req.Packages...)
-	
+	output, err := privOps.PackageCommand(PackageInstall, req.Packages...)
+
 	response := map[string]interface{}{
 		"output": output,
 	}
-	
+
 	if err != nil {
 		response["error"] = err.Error()
 		w.WriteHeader(http.StatusInternalServerError)
@@ -204,7 +204,7 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 // Handler for listing Docker containers
 func listDockerContainersHandler(w http.ResponseWriter, r *http.Request) {
 	output, err := privOps.ListDockerContainers()
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
