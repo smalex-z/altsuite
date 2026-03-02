@@ -1,0 +1,41 @@
+name: Go Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Run unit tests and generate coverage
+        run: |
+          cd api
+          go test -v -coverprofile=coverage.out ./... | tee test_output.txt
+          go tool cover -func=coverage.out > coverage.txt
+      - name: Parse test results and comment
+        if: always()
+        run: |
+          TESTS_RUN=$(grep -c "--- PASS" api/test_output.txt)
+          TESTS_TOTAL=$(grep -c "ok " api/test_output.txt)
+          echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
+          echo "Unit tests passed: $TESTS_RUN" >> test_summary.txt
+      - name: Upload coverage report (PR only)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: api/coverage.txt
+      - name: Comment test summary (PR only)
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: api/test_summary.txt
