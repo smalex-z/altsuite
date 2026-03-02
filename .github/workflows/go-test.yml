@@ -28,10 +28,12 @@ jobs:
       - name: Parse test results and comment
         if: always()
         run: |
-          TESTS_RUN=$(grep -c -- '--- PASS' api/test_output.txt)
-          TESTS_TOTAL=$(grep -c 'ok ' api/test_output.txt)
+          TESTS_PASSED=$(grep -c -- '--- PASS' api/test_output.txt)
+          TESTS_FAILED=$(grep -c -- '--- FAIL' api/test_output.txt)
+          TESTS_TOTAL=$((TESTS_PASSED + TESTS_FAILED))
           echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
-          echo "Unit tests passed: $TESTS_RUN" >> test_summary.txt
+          echo "Unit tests passed: $TESTS_PASSED" >> test_summary.txt
+          echo "Unit tests failed: $TESTS_FAILED" >> test_summary.txt
       - name: Upload coverage report (PR only)
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
