@@ -27,8 +27,8 @@ type ServiceActionRequest struct {
 }
 
 type PackageListResponse struct {
-	Packages []string `json:"packages"`
-	Count    int      `json:"count"`
+	Packages []SupportedApp `json:"packages"`
+	Count    int            `json:"count"`
 }
 
 var privOps *PrivilegedOps
@@ -139,17 +139,14 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 // Handler for listing installed packages
 func listPackagesHandler(w http.ResponseWriter, r *http.Request) {
 	packages, err := privOps.ListInstalledPackages()
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	response := PackageListResponse{
 		Packages: packages,
 		Count:    len(packages),
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

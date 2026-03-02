@@ -1,204 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, Shield, Check } from "lucide-react";
-
-interface CatalogApp {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  replaces: string;
-  monthlyCost: number;
-  monthlySavings: number;
-  features: string[];
-  recommended: boolean;
-  installed: boolean;
-}
-
-const MOCK_CATALOG: CatalogApp[] = [
-  {
-    id: "1",
-    name: "Mattermost",
-    description:
-      "Open-source team collaboration and messaging platform with channels, direct messages, and file sharing.",
-    category: "Communication",
-    replaces: "Slack Enterprise",
-    monthlyCost: 12.5,
-    monthlySavings: 840,
-    features: [
-      "Unlimited message history",
-      "File sharing",
-      "Video calls",
-      "Integrations",
-      "Mobile apps",
-    ],
-    recommended: true,
-    installed: true,
-  },
-  {
-    id: "2",
-    name: "GitLab",
-    description:
-      "Complete DevOps platform with Git repository management, CI/CD pipelines, and issue tracking.",
-    category: "Development",
-    replaces: "GitHub Enterprise",
-    monthlyCost: 0,
-    monthlySavings: 1050,
-    features: [
-      "Git repositories",
-      "CI/CD pipelines",
-      "Issue tracking",
-      "Code review",
-      "Container registry",
-    ],
-    recommended: true,
-    installed: true,
-  },
-  {
-    id: "3",
-    name: "AppFlowy",
-    description:
-      "Privacy-first alternative to Notion for notes, wikis, and project management.",
-    category: "Productivity",
-    replaces: "Notion Business",
-    monthlyCost: 0,
-    monthlySavings: 600,
-    features: [
-      "Rich text editor",
-      "Database views",
-      "Kanban boards",
-      "Calendar",
-      "Real-time collaboration",
-    ],
-    recommended: true,
-    installed: true,
-  },
-  {
-    id: "4",
-    name: "Jitsi Meet",
-    description:
-      "Secure and feature-rich video conferencing solution with screen sharing and recording.",
-    category: "Communication",
-    replaces: "Zoom Business",
-    monthlyCost: 0,
-    monthlySavings: 552,
-    features: [
-      "HD video/audio",
-      "Screen sharing",
-      "Recording",
-      "No account required",
-      "End-to-end encryption",
-    ],
-    recommended: true,
-    installed: true,
-  },
-  {
-    id: "5",
-    name: "Nextcloud",
-    description:
-      "Self-hosted file sync and share platform with office suite and collaboration tools.",
-    category: "Storage",
-    replaces: "Dropbox Business",
-    monthlyCost: 0,
-    monthlySavings: 720,
-    features: [
-      "File sync & share",
-      "Online office",
-      "Calendar & contacts",
-      "End-to-end encryption",
-      "Mobile apps",
-    ],
-    recommended: false,
-    installed: false,
-  },
-  {
-    id: "6",
-    name: "Rocket.Chat",
-    description:
-      "Customizable team communication platform with omnichannel capabilities.",
-    category: "Communication",
-    replaces: "Slack Business",
-    monthlyCost: 0,
-    monthlySavings: 540,
-    features: [
-      "Real-time chat",
-      "Video conferencing",
-      "Omnichannel",
-      "Custom integrations",
-      "Mobile apps",
-    ],
-    recommended: false,
-    installed: false,
-  },
-  {
-    id: "7",
-    name: "Taiga",
-    description:
-      "Project management platform for agile teams with scrum and kanban support.",
-    category: "Project Management",
-    replaces: "Jira Software",
-    monthlyCost: 0,
-    monthlySavings: 630,
-    features: [
-      "Scrum & Kanban",
-      "Sprint planning",
-      "Backlog management",
-      "Issue tracking",
-      "Wikis",
-    ],
-    recommended: false,
-    installed: false,
-  },
-  {
-    id: "8",
-    name: "Matomo",
-    description:
-      "Privacy-focused web analytics platform that respects user privacy.",
-    category: "Analytics",
-    replaces: "Google Analytics 360",
-    monthlyCost: 0,
-    monthlySavings: 1250,
-    features: [
-      "Real-time analytics",
-      "GDPR compliant",
-      "Custom reports",
-      "Heatmaps",
-      "A/B testing",
-    ],
-    recommended: false,
-    installed: false,
-  },
-];
+import { getCatalogApps, CatalogApp } from "@/lib/api";
 
 export default function CatalogPage() {
-  const [apps, setApps] = useState<CatalogApp[]>(MOCK_CATALOG);
+  const [apps, setApps] = useState<CatalogApp[]>([]);
   const [filter, setFilter] = useState<string>("all");
-  const categories = [
-    "all",
-    ...Array.from(new Set(apps.map((app) => app.category))),
-  ];
 
-  const filteredApps =
-    filter === "all" ? apps : apps.filter((app) => app.category === filter);
+  useEffect(() => {
+    async function fetchApps() {
+      try {
+        const data = await getCatalogApps();
+        setApps(data);
+      } catch (error) {
+        console.error("Error fetching catalog apps:", error);
+      }
+    }
+    fetchApps();
+  }, []);
 
-  const handleInstall = (id: string) => {
-    setApps((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, installed: true } : app))
-    );
-  };
+  // Unique categories for filter buttons
+  const categories = Array.from(new Set(apps.map((app) => app.category)));
+
+  // Filtered apps based on selected filter
+  const filteredApps = filter === "all" ? apps : apps.filter((app) => app.category === filter);
+
+  // Mock install handler
+  function handleInstall(id: string) {
+    alert(`Install triggered for app id: ${id}`);
+  }
 
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">App Catalog</h1>
         <p className="text-gray-600">
-          Discover and deploy open-source alternatives to expensive SaaS
-          products
+          Discover and deploy open-source alternatives to expensive SaaS products
         </p>
       </div>
 
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <button
+          key="all"
+          onClick={() => setFilter("all")}
+          className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+            filter === "all"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          All
+        </button>
         {categories.map((category) => (
           <button
             key={category}

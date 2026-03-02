@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var supportedAppsFilePath = "./api/supported_apps.json"
+var supportedAppsFilePath = "./supported_apps.json"
 
 type SupportedApp struct {
 	ID             string   `json:"id"`

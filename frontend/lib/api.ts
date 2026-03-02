@@ -1,3 +1,28 @@
+// CatalogApp type for API responses
+export interface CatalogApp {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  replaces: string;
+  monthlyCost: number;
+  monthlySavings: number;
+  features: string[];
+  recommended: boolean;
+  installed: boolean;
+}
+
+// Fetch all catalog apps from the Go API
+export async function getCatalogApps(): Promise<CatalogApp[]> {
+  const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
+  const res = await fetch(`${API_BASE}/api/packages`);
+  if (!res.ok) throw new Error("Failed to fetch catalog apps");
+  const data = await res.json();
+  // If the response is { packages: CatalogApp[], count: number }, extract .packages
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.packages)) return data.packages;
+  return [];
+}
 /**
  * API client placeholder for AltSuite backend.
  * Replace these with real fetch/axios calls when the API is ready.
