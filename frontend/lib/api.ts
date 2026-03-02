@@ -10,6 +10,11 @@ export interface CatalogApp {
   features: string[];
   recommended: boolean;
   installed: boolean;
+  requiredSpecs?: {
+    cpu: string;
+    memory: string;
+    network: string;
+  };
 }
 
 // Fetch all catalog apps from the Go API
@@ -68,6 +73,8 @@ TODO:
 export async function getInstalledPackages(){
   if (!API_BASE) return { };
   const res = await fetch(`${API_BASE}/api/services/packages`);
+  if (!res.ok) throw new Error("Failed to fetch installed packages");
+  return res.json();
 }
 
 

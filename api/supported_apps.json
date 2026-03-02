@@ -15,7 +15,12 @@
       "Mobile apps"
     ],
     "recommended": true,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "2 vCPU",
+      "memory": "4 GB",
+      "network": "10 Mbps"
+    }
   },
   {
     "id": "2",
@@ -33,7 +38,12 @@
       "Container registry"
     ],
     "recommended": true,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "4 vCPU",
+      "memory": "8 GB",
+      "network": "20 Mbps"
+    }
   },
   {
     "id": "3",
@@ -51,7 +61,12 @@
       "Real-time collaboration"
     ],
     "recommended": true,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "2 vCPU",
+      "memory": "2 GB",
+      "network": "5 Mbps"
+    }
   },
   {
     "id": "4",
@@ -69,7 +84,12 @@
       "End-to-end encryption"
     ],
     "recommended": true,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "2 vCPU",
+      "memory": "2 GB",
+      "network": "8 Mbps"
+    }
   },
   {
     "id": "5",
@@ -87,7 +107,12 @@
       "Mobile apps"
     ],
     "recommended": false,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "2 vCPU",
+      "memory": "4 GB",
+      "network": "10 Mbps"
+    }
   },
   {
     "id": "6",
@@ -105,7 +130,12 @@
       "Mobile apps"
     ],
     "recommended": false,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "2 vCPU",
+      "memory": "2 GB",
+      "network": "10 Mbps"
+    }
   },
   {
     "id": "7",
@@ -123,7 +153,12 @@
       "Wikis"
     ],
     "recommended": false,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "1 vCPU",
+      "memory": "2 GB",
+      "network": "5 Mbps"
+    }
   },
   {
     "id": "8",
@@ -141,6 +176,11 @@
       "A/B testing"
     ],
     "recommended": false,
-    "installed": false
+    "installed": false,
+    "requiredSpecs": {
+      "cpu": "2 vCPU",
+      "memory": "4 GB",
+      "network": "10 Mbps"
+    }
   }
 ]

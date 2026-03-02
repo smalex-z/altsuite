@@ -75,13 +75,6 @@ export default function CatalogPage() {
               app.recommended ? "border-blue-200 shadow-md" : "border-gray-200"
             }`}
           >
-            {app.recommended && (
-              <div className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full mb-4">
-                <Shield className="w-3 h-3" />
-                Recommended
-              </div>
-            )}
-
             <div className="flex items-start justify-between mb-3 gap-2">
               <div className="min-w-0">
                 <h3 className="text-xl font-bold text-gray-900 mb-1">
@@ -106,6 +99,7 @@ export default function CatalogPage() {
               <span className="font-semibold text-gray-900">{app.replaces}</span>
             </p>
 
+
             <div className="mb-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">
                 Key Features:
@@ -122,6 +116,25 @@ export default function CatalogPage() {
                 ))}
               </ul>
             </div>
+
+            {app.requiredSpecs && (
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-gray-700 mb-2">
+                  Required Specs:
+                </p>
+                <ul className="space-y-1">
+                  <li className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="font-medium text-gray-800">CPU:</span> {app.requiredSpecs.cpu}
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="font-medium text-gray-800">Memory:</span> {app.requiredSpecs.memory}
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="font-medium text-gray-800">Network:</span> {app.requiredSpecs.network}
+                  </li>
+                </ul>
+              </div>
+            )}
 
             <button
               onClick={() => handleInstall(app.id)}
