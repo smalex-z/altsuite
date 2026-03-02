@@ -28,8 +28,8 @@ jobs:
       - name: Parse test results and comment
         if: always()
         run: |
-          TESTS_PASSED=$(grep -c -- '--- PASS' api/test_output.txt)
-          TESTS_FAILED=$(grep -c -- '--- FAIL' api/test_output.txt)
+          TESTS_PASSED=$(grep -c -- '--- PASS:' api/test_output.txt)
+          TESTS_TOTAL=$(grep -c -- '=== RUN' api/test_output.txt)
           TESTS_TOTAL=$((TESTS_PASSED + TESTS_FAILED))
           echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
           echo "Unit tests passed: $TESTS_PASSED" >> test_summary.txt
