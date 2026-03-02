@@ -170,7 +170,7 @@ func getPackageInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(info))
 }
 
-// Handler for installing packages
+// First ensure that it is one of the supported packages in side of supported_apps.json before installing
 func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Packages []string `json:"packages"`

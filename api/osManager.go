@@ -20,39 +20,15 @@ type PackageManager interface {
 	Install(pkgs ...string) (string, error)
 	Remove(pkgs ...string) (string, error)
 	Update() (string, error)
-	ListPackages() ([]string, error)
+	ListPackages() ([]SupportedApp, error)
 }
 
 // Linux (APT) implementation
 type AptManager struct{}
 
-// List installed packages for Linux (apt)
-func (a *AptManager) ListPackages() ([]string, error) {
-	cmd := exec.Command("dpkg", "-l")
-	packageMeta, err := LoadPackageMetadata()
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list packages: %w", err)
-	}
-	// Create a set for fast lookup
-	tracked := make(map[string]struct{})
-	for _, pkg := range packageMeta.Packages {
-		tracked[pkg] = struct{}{}
-	}
-	lines := strings.Split(string(output), "\n")
-	var packages []string
-	for _, line := range lines {
-		if strings.HasPrefix(line, "ii") {
-			fields := strings.Fields(line)
-			if len(fields) >= 2 {
-				pkgName := fields[1]
-				if _, ok := tracked[pkgName]; ok {
-					packages = append(packages, pkgName)
-				}
-			}
-		}
-	}
-	return packages, nil
+// List all supported apps (metadata) for Linux (apt)
+func (a *AptManager) ListPackages() ([]SupportedApp, error) {
+	return LoadSupportedApps()
 }
 
 func (a *AptManager) Install(pkgs ...string) (string, error) {
@@ -65,7 +41,9 @@ func (a *AptManager) Install(pkgs ...string) (string, error) {
 		if err != nil {
 			return strings.Join(outputs, "\n"), fmt.Errorf("apt-get install failed for package %s: %w - %s", pkg, err, string(output))
 		}
-		AddPackageToMetadata(pkg)
+		if err := SetInstalledState(pkg, true); err != nil {
+			return strings.Join(outputs, "\n"), fmt.Errorf("failed to update installed state for %s: %w", pkg, err)
+		}
 	}
 	return strings.Join(outputs, "\n"), nil
 }
@@ -80,7 +58,9 @@ func (a *AptManager) Remove(pkgs ...string) (string, error) {
 		if err != nil {
 			return strings.Join(outputs, "\n"), fmt.Errorf("apt-get remove failed for package %s: %w - %s", pkg, err, string(output))
 		}
-		RemovePackageFromMetadata(pkg)
+		if err := SetInstalledState(pkg, false); err != nil {
+			return strings.Join(outputs, "\n"), fmt.Errorf("failed to update installed state for %s: %w", pkg, err)
+		}
 	}
 	return strings.Join(outputs, "\n"), nil
 }
@@ -98,26 +78,9 @@ func (a *AptManager) Update() (string, error) {
 // Mac (Homebrew) implementation
 type BrewManager struct{}
 
-// List installed packages for macOS (brew)
-func (b *BrewManager) ListPackages() ([]string, error) {
-	cmd := exec.Command("brew", "list", "--casks")
-	packageMeta, err := LoadPackageMetadata()
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list brew packages: %w - %s", err, string(output))
-	}
-	tracked := make(map[string]struct{})
-	for _, pkg := range packageMeta.Packages {
-		tracked[pkg] = struct{}{}
-	}
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	var filtered []string
-	for _, pkg := range lines {
-		if _, ok := tracked[pkg]; ok {
-			filtered = append(filtered, pkg)
-		}
-	}
-	return filtered, nil
+// List all supported apps (metadata) for macOS (brew)
+func (b *BrewManager) ListPackages() ([]SupportedApp, error) {
+	return LoadSupportedApps()
 }
 
 func (b *BrewManager) Install(pkgs ...string) (string, error) {
@@ -130,7 +93,9 @@ func (b *BrewManager) Install(pkgs ...string) (string, error) {
 		if err != nil {
 			return strings.Join(outputs, "\n"), fmt.Errorf("brew install failed for package %s: %w - %s", pkg, err, string(output))
 		}
-		AddPackageToMetadata(pkg)
+		if err := SetInstalledState(pkg, true); err != nil {
+			return strings.Join(outputs, "\n"), fmt.Errorf("failed to update installed state for %s: %w", pkg, err)
+		}
 	}
 	return strings.Join(outputs, "\n"), nil
 }
@@ -145,7 +110,9 @@ func (b *BrewManager) Remove(pkgs ...string) (string, error) {
 		if err != nil {
 			return strings.Join(outputs, "\n"), fmt.Errorf("brew uninstall failed for package %s: %w - %s", pkg, err, string(output))
 		}
-		RemovePackageFromMetadata(pkg)
+		if err := SetInstalledState(pkg, false); err != nil {
+			return strings.Join(outputs, "\n"), fmt.Errorf("failed to update installed state for %s: %w", pkg, err)
+		}
 	}
 	return strings.Join(outputs, "\n"), nil
 }

@@ -31,5 +31,20 @@ export async function serviceAction(serviceName: string, action: "start" | "stop
   return res.json();
 }
 
+
+/* 
+TODO: 
+- try calling the API endpoint and check what the return type looks like
+- make it dynamic in the frontend so if not installed it should say not installed
+- how should we store apps that are supported? JSON file? --> we can render supported apps from there
+- should update the JSON file created when installing to just have a list of the catalog apps similar to how page.tsx does in catalog
+*/
+
+export async function getInstalledPackages(){
+  if (!API_BASE) return { };
+  const res = await fetch(`${API_BASE}/api/services/packages`);
+}
+
+
 // Add more API functions here as backend endpoints are ready:
 // getSystemMetrics(), getInstalledPackages(), startInstallation(), getInstallLogs(), etc.
