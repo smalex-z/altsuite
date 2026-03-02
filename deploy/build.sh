@@ -33,3 +33,13 @@ echo "To install, run:"
 echo "  cd deploy"
 echo "  sudo ./install.sh"
 echo ""
+
+# Ensure install scripts are executable
+chmod +x "$SCRIPT_DIR/install.sh" \
+    "$SCRIPT_DIR/uninstall.sh" \
+    "$SCRIPT_DIR/update.sh" \
+    "$SCRIPT_DIR/services/mattermost-install.sh" \
+    "$SCRIPT_DIR/services/penpot-install.sh" \
+    "$SCRIPT_DIR/services/gitea-install.sh" \
+    "$SCRIPT_DIR/services/caldotcom-install.sh"
+echo "✓ Installer scripts are now executable."

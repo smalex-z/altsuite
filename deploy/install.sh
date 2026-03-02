@@ -108,45 +108,16 @@ if [ "$MODE" = "service" ]; then
 
     case "$SERVICE_NAME" in
         mattermost)
-            if [ -z "$DOMAIN_ARG" ]; then
-                echo "Usage: sudo ./install.sh mattermost <domain>"
-                exit 1
-            fi
-            if ! command -v docker &>/dev/null; then
-                echo "Docker is required. Install Docker and try again."
-                exit 1
-            fi
-
-            echo "Cloning Mattermost Docker repository..."
-            git clone https://github.com/mattermost/docker "$SERVICE_DIR"
-
-            cd "$SERVICE_DIR"
-            cp env.example .env
-            sed -i "s/^DOMAIN=.*/DOMAIN=$DOMAIN_ARG/" .env
-
-            mkdir -p ./volumes/app/mattermost/{config,data,logs,plugins,client/plugins,bleve-indexes}
-            chown -R 2000:2000 ./volumes/app/mattermost
-            chown -R altsuite:altsuite "$SERVICE_DIR"
-
-            echo "Starting Mattermost containers..."
-            docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml up -d
-
-            echo ""
-            echo "========================================"
-            echo "Mattermost running at http://$DOMAIN_ARG:8065"
-            echo "========================================"
+            "$SCRIPT_DIR/services/mattermost-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         penpot)
-            echo "Installing Penpot..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/penpot-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         gitea)
-            echo "Installing Gitea..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         caldotcom)
-            echo "Installing Cal.com..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/caldotcom-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         *)
             echo "Unknown service: $SERVICE_NAME"
