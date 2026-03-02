@@ -30,10 +30,10 @@ jobs:
         run: |
           TESTS_PASSED=$(grep -c -- '--- PASS:' api/test_output.txt)
           TESTS_TOTAL=$(grep -c -- '=== RUN' api/test_output.txt)
-          TESTS_TOTAL=$((TESTS_PASSED + TESTS_FAILED))
+          COVERAGE=$(grep 'coverage:' api/test_output.txt | tail -1 | awk '{print $2 " " $3 " " $4}')
           echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
           echo "Unit tests passed: $TESTS_PASSED" >> test_summary.txt
-          echo "Unit tests failed: $TESTS_FAILED" >> test_summary.txt
+          echo "Test coverage: $COVERAGE" >> test_summary.txt
       - name: Upload coverage report (PR only)
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
