@@ -13,9 +13,10 @@ fi
 MODE="altsuite"
 SERVICE_NAME_ARG=""
 
-if [ $# -eq 1 ]; then
+if [ $# -ge 1 ]; then
     MODE="service"
     SERVICE_NAME_ARG="$1"
+    DOMAIN_ARG="${2:-}"
 fi
 
 # ============================================
@@ -31,6 +32,7 @@ if [ "$MODE" = "altsuite" ]; then
     INSTALL_DIR="/opt/altsuite"
     SERVICE_NAME="altsuite"
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
     # Create altsuite user if it doesn't exist
     if ! id "$INSTALL_USER" &>/dev/null; then
@@ -53,12 +55,29 @@ if [ "$MODE" = "altsuite" ]; then
 
     # Validate sudoers syntax
     if visudo -c -f /etc/sudoers.d/altsuite; then
-        echo "Sudoers configuration validated and installed."
+        echo "Sudoers validated."
     else
-        echo "Sudoers configuration has syntax errors. Removing..."
+        echo "Sudoers has syntax errors. Removing..."
         rm /etc/sudoers.d/altsuite
         exit 1
     fi
+
+    echo "Deploying binary..."
+    cp "$PROJECT_ROOT/api/altsuite" "$INSTALL_DIR/bin/altsuite"
+    chmod +x "$INSTALL_DIR/bin/altsuite"
+    chown "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/bin/altsuite"
+
+    if [ -d "$PROJECT_ROOT/frontend/out" ]; then
+        echo "Deploying frontend..."
+        cp -r "$PROJECT_ROOT/frontend/out/." "$INSTALL_DIR/frontend/"
+        chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/frontend"
+    fi
+
+    echo "Installing systemd service..."
+    cp "$SCRIPT_DIR/altsuite.service" /etc/systemd/system/altsuite.service
+    systemctl daemon-reload
+    systemctl enable altsuite
+    systemctl start altsuite
 
     echo ""
     echo "========================================"
@@ -89,20 +108,16 @@ if [ "$MODE" = "service" ]; then
 
     case "$SERVICE_NAME" in
         mattermost)
-            echo "Installing Mattermost..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/mattermost-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         penpot)
-            echo "Installing Penpot..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/penpot-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         gitea)
-            echo "Installing Gitea..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         caldotcom)
-            echo "Installing Cal.com..."
-            echo "Created directories in $SERVICE_DIR"
+            "$SCRIPT_DIR/services/caldotcom-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
         *)
             echo "Unknown service: $SERVICE_NAME"

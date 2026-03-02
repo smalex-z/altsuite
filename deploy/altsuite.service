@@ -1,0 +1,16 @@
+[Unit]
+Description=AltSuite Management Service
+After=network.target
+
+[Service]
+Type=simple
+User=altsuite
+ExecStart=/opt/altsuite/bin/altsuite
+WorkingDirectory=/opt/altsuite
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/altsuite/logs/altsuite.log
+StandardError=append:/opt/altsuite/logs/altsuite.log
+
+[Install]
+WantedBy=multi-user.target
