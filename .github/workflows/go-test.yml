@@ -24,8 +24,8 @@ jobs:
       - name: Parse test results and comment
         if: always()
         run: |
-          TESTS_RUN=$(grep -c "--- PASS" api/test_output.txt)
-          TESTS_TOTAL=$(grep -c "ok " api/test_output.txt)
+          TESTS_RUN=$(grep -c '--- PASS' api/test_output.txt)
+          TESTS_TOTAL=$(grep -c 'ok ' api/test_output.txt)
           echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
           echo "Unit tests passed: $TESTS_RUN" >> test_summary.txt
       - name: Upload coverage report (PR only)
