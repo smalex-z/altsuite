@@ -31,7 +31,7 @@ jobs:
         run: |
           TESTS_PASSED=$(grep -c -- '--- PASS:' api/test_output.txt)
           TESTS_TOTAL=$(grep -c -- '=== RUN' api/test_output.txt)
-          COVERAGE=$(grep 'coverage:' api/test_output.txt | tail -1 | grep -o 'coverage:.*')
+          COVERAGE=$(grep 'coverage:' api/test_output.txt | tail -1 | grep -oP '\d+\.\d+%')
           echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
           echo "Unit tests passed: $TESTS_PASSED" >> test_summary.txt
           echo "Test coverage: $COVERAGE" >> test_summary.txt
@@ -47,4 +47,5 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          recreate: true
           path: test_summary.txt
