@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react";
 import { Check, ChevronRight, Loader2, GitBranch, Settings, Box, Play } from "lucide-react";
 
+/*
+Steps for installation: 
+- Development will be unique for each app but gist should look this this for apps that require install
+- Currently testing with RocketChat
+- Will need a script to install docker / git if needed (each individual app will need these) should be done in the background (do not use --cask for homebrew)
+- For each app we will need a different install page that asks for diff configurations (should be ux friendly)
+- Setups that can be configured such as Grafana dashboards, domain names, should be a form that can be filled out
+- each installation wizard shouldnt be a component but should be its own route (e.g. /install/rocketchat, /install/nextcloud) so that we can have unique configurations for each app
+- Goal: to be able to list out the running docker containers of the application and to show the active app in /installed
+*/
 const STEPS = [
   { id: 1, label: "Select services", icon: Check },
   { id: 2, label: "Configure", icon: Settings },
