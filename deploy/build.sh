@@ -11,7 +11,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Build API
 echo "Building Go API..."
 cd "$PROJECT_ROOT/api"
-go build -o altsuite main.go privileged.go
+go build -o altsuite main.go privileged.go osManager.go
 echo "✓ API binary created: api/altsuite"
 
 # Build Frontend
