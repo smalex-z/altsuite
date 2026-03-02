@@ -55,6 +55,10 @@ func main() {
 	// Docker endpoints (if Docker is installed)
 	api.HandleFunc("/docker/containers", listDockerContainersHandler).Methods("GET")
 
+	// Serve frontend static files
+	frontendDir := "/opt/altsuite/frontend"
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(frontendDir)))
+
 	// CORS middleware for development
 	r.Use(corsMiddleware)
 
