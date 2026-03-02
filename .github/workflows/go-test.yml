@@ -38,4 +38,4 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          path: api/test_summary.txt
+          path: test_summary.txt
