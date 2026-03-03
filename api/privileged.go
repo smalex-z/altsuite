@@ -112,27 +112,13 @@ func (p *PrivilegedOps) PackageCommand(operation PackageOperation, packages ...s
 }
 
 // Returns a list of installed packages
-func (p *PrivilegedOps) ListInstalledPackages() ([]string, error) {
-	cmd := exec.Command("dpkg", "-l")
-	output, err := cmd.CombinedOutput()
+func (p *PrivilegedOps) ListInstalledPackages() ([]SupportedApp, error) {
+	packageManager := GetPackageManager(detectOS())
 
+	packages, err := packageManager.ListPackages()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list packages: %w", err)
+		return nil, err
 	}
-
-	// Parse dpkg output
-	lines := strings.Split(string(output), "\n")
-	var packages []string
-
-	for _, line := range lines {
-		if strings.HasPrefix(line, "ii") {
-			fields := strings.Fields(line)
-			if len(fields) >= 2 {
-				packages = append(packages, fields[1])
-			}
-		}
-	}
-
 	return packages, nil
 }
 
