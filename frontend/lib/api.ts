@@ -62,9 +62,24 @@ export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week
   if (!API_BASE) {
     // Return mock data
     const now = Date.now();
-    const interval = range === "minute" ? 5000 : range === "hour" ? 60000 : 300000;
-    const count = range === "minute" ? 12 : range === "hour" ? 60 : 20;
-    
+    const interval =
+      range === "minute"
+        ? 5000 // 5 seconds, ~1 minute total with 12 points
+        : range === "hour"
+        ? 60000 // 1 minute, 60 points = 1 hour
+        : range === "day"
+        ? 60 * 60 * 1000 // 1 hour, 24 points = 24 hours
+        : 24 * 60 * 60 * 1000; // 1 day for "week" and "month"
+    const count =
+      range === "minute"
+        ? 12
+        : range === "hour"
+        ? 60
+        : range === "day"
+        ? 24
+        : range === "week"
+        ? 7
+        : 30; // "month"
     return {
       range,
       metrics: Array.from({ length: count }, (_, i) => ({
