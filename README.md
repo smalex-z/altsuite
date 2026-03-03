@@ -48,6 +48,7 @@ Quick Install: (Frowned upon for security reasons)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/smalex-z/altsuite/main/deploy/quick-install.sh | bash
 ```
+(Enter Sudo Password when prompted!)
 
 OR
 

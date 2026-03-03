@@ -19,7 +19,13 @@ chmod +x ./build.sh
 echo "Running build script..."
 ./build.sh
 
-echo "Running installer (sudo required)..."
+echo ""
+echo "========================================"
+echo "  SUDO PASSWORD REQUIRED"
+echo "  AltSuite needs root to install system"
+echo "  services, users, and directories."
+echo "========================================"
+echo ""
 sudo ./install.sh
 
 echo "[AltSuite] Installation complete!"
