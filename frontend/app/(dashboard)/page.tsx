@@ -67,9 +67,7 @@ export default function OverviewPage() {
           const date = new Date(m.timestamp);
           let timestamp: string;
           
-          if (timeRange === "minute" || timeRange === "hour") {
-            timestamp = `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
-          } else if (timeRange === "day") {
+          if (timeRange === "minute" || timeRange === "hour" || timeRange === "day") {
             timestamp = `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
           } else {
             timestamp = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
