@@ -1,0 +1,51 @@
+name: Go Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, feat/golang-unit-tests ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Run unit tests and generate coverage
+        run: |
+          cd api
+          go test -v -coverprofile=coverage.out ./... | tee test_output.txt
+          go tool cover -func=coverage.out > coverage.txt
+          go tool cover -html=coverage.out -o coverage.html
+      - name: Parse test results and comment
+        if: always()
+        run: |
+          TESTS_PASSED=$(grep -c -- '--- PASS:' api/test_output.txt)
+          TESTS_TOTAL=$(grep -c -- '=== RUN' api/test_output.txt)
+          COVERAGE=$(grep 'coverage:' api/test_output.txt | tail -1 | grep -oP '\d+\.\d+%')
+          echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
+          echo "Unit tests passed: $TESTS_PASSED" >> test_summary.txt
+          echo "Test coverage: $COVERAGE" >> test_summary.txt
+      - name: Upload coverage report (PR only)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            api/coverage.txt
+            api/coverage.html
+      - name: Comment test summary (PR only)
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          path: test_summary.txt
