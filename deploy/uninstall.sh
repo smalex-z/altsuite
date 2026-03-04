@@ -37,6 +37,18 @@ if [ "$MODE" = "service" ]; then
     fi
 
     if [ -d "$SERVICE_DIR" ]; then
+        case "$SERVICE_NAME" in
+            mattermost)
+                echo "Stopping Mattermost containers..."
+                cd "$SERVICE_DIR"
+                docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml down || true
+                read -p "Remove all Mattermost data/volumes? (y/N): " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    rm -rf "$SERVICE_DIR/volumes"
+                fi
+                ;;
+        esac
         echo "Removing service directory $SERVICE_DIR..."
         rm -rf "$SERVICE_DIR"
     else
