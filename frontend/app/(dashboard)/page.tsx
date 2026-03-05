@@ -14,7 +14,8 @@ import { Cpu, HardDrive, Activity } from "lucide-react";
 import { getCurrentMetrics, getMetricsHistory } from "@/lib/api";
 
 interface SystemMetrics {
-  timestamp: string;
+  xAxisLabel: string;   // short label shown on x-axis
+  rawTimestamp: string; // ISO string used for tooltip display
   cpu: number;
   memory: number;
   network: number;
@@ -49,7 +50,8 @@ function smoothData(data: SystemMetrics[], windowSize: number = 3): SystemMetric
     const window = data.slice(start, end);
     
     const avg = {
-      timestamp: data[i].timestamp,
+      xAxisLabel: data[i].xAxisLabel,
+      rawTimestamp: data[i].rawTimestamp,
       cpu: Math.max(0, window.reduce((sum, d) => sum + d.cpu, 0) / window.length),
       memory: Math.max(0, window.reduce((sum, d) => sum + d.memory, 0) / window.length),
       network: Math.max(0, window.reduce((sum, d) => sum + d.network, 0) / window.length),
@@ -69,6 +71,48 @@ function formatToSigFigs(value: number, sigFigs: number = 4): string {
   const decimals = Math.max(0, sigFigs - magnitude - 1);
   
   return value.toFixed(Math.min(decimals, 4));
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Format ISO timestamp as "March 5, 2026 at 13:58" for tooltip display
+function formatTooltipLabel(rawTimestamp: string): string {
+  const date = new Date(rawTimestamp);
+  const month = MONTHS[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${month} ${day}, ${year} at ${hours}:${minutes}`;
+}
+
+// Format x-axis label based on time range
+function formatXAxisLabel(date: Date, timeRange: TimeRange): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  if (timeRange === "minute") {
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+  if (timeRange === "hour") {
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+  if (timeRange === "day") {
+    return `${date.getHours()}`;
+  }
+  // week or month: day of month
+  return `${date.getDate()}`;
+}
+
+// Blank out consecutive duplicate x-axis labels so each value only appears once
+function deduplicateXAxisLabels(data: SystemMetrics[]): SystemMetrics[] {
+  return data.map((point, i) => {
+    if (i > 0 && point.xAxisLabel === data[i - 1].xAxisLabel) {
+      return { ...point, xAxisLabel: "" };
+    }
+    return point;
+  });
 }
 
 export default function OverviewPage() {
@@ -117,18 +161,9 @@ export default function OverviewPage() {
         const data = await getMetricsHistory(timeRange);
         let formattedMetrics = data.metrics.map((m) => {
           const date = new Date(m.timestamp);
-          let timestamp: string;
-          
-          if (timeRange === "minute" || timeRange === "hour") {
-            timestamp = `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
-          } else if (timeRange === "day") {
-            timestamp = `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
-          } else {
-            timestamp = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
-          }
-
           return {
-            timestamp,
+            xAxisLabel: formatXAxisLabel(date, timeRange),
+            rawTimestamp: m.timestamp,
             cpu: m.cpu,
             memory: m.memory,
             network: m.network,
@@ -142,6 +177,11 @@ export default function OverviewPage() {
         if (formattedMetrics.length >= 5) {
           const windowSize = Math.min(5, Math.ceil(formattedMetrics.length / 8));
           formattedMetrics = smoothData(formattedMetrics, windowSize);
+        }
+
+        // For day/week/month, only show the label once when the hour/day changes
+        if (timeRange === "day" || timeRange === "week" || timeRange === "month") {
+          formattedMetrics = deduplicateXAxisLabels(formattedMetrics);
         }
 
         setMetrics(formattedMetrics);
@@ -247,7 +287,7 @@ export default function OverviewPage() {
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="timestamp" stroke="#6b7280" />
+              <XAxis dataKey="xAxisLabel" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
               <Tooltip
                 contentStyle={{
@@ -256,6 +296,11 @@ export default function OverviewPage() {
                   borderRadius: "0.5rem",
                 }}
                 formatter={(value: number) => formatToSigFigs(value)}
+                labelFormatter={(_label, payload) =>
+                  payload?.[0]?.payload?.rawTimestamp
+                    ? formatTooltipLabel(payload[0].payload.rawTimestamp)
+                    : _label
+                }
               />
               <Line
                 type="natural"
@@ -282,7 +327,7 @@ export default function OverviewPage() {
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="timestamp" stroke="#6b7280" />
+              <XAxis dataKey="xAxisLabel" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
               <Tooltip
                 contentStyle={{
@@ -291,6 +336,11 @@ export default function OverviewPage() {
                   borderRadius: "0.5rem",
                 }}
                 formatter={(value: number) => formatToSigFigs(value)}
+                labelFormatter={(_label, payload) =>
+                  payload?.[0]?.payload?.rawTimestamp
+                    ? formatTooltipLabel(payload[0].payload.rawTimestamp)
+                    : _label
+                }
               />
               <Line
                 type="natural"
