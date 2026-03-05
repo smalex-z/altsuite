@@ -31,7 +31,7 @@ function downsampleToMax<T>(data: T[], maxPoints: number): T[] {
   const result: T[] = [];
   
   for (let i = 0; i < maxPoints; i++) {
-    const index = Math.floor(i * step);
+    const index = i === maxPoints - 1 ? data.length - 1 : Math.floor(i * step);
     result.push(data[index]);
   }
   
