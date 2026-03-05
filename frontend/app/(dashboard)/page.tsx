@@ -84,6 +84,9 @@ export default function OverviewPage() {
 
   const [error, setError] = useState<string | null>(null);
 
+  // Determine whether to show dots based on data point count
+  const showDots = metrics.length <= 20;
+
   // Fetch current metrics
   useEffect(() => {
     const fetchCurrentMetrics = async () => {
@@ -260,7 +263,7 @@ export default function OverviewPage() {
                 stroke="#3b82f6"
                 strokeWidth={2}
                 name="CPU %"
-                dot={false}
+                dot={showDots}
               />
               <Line
                 type="natural"
@@ -268,7 +271,7 @@ export default function OverviewPage() {
                 stroke="#8b5cf6"
                 strokeWidth={2}
                 name="Memory %"
-                dot={false}
+                dot={showDots}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -295,7 +298,7 @@ export default function OverviewPage() {
                 stroke="#10b981"
                 strokeWidth={2}
                 name="Network (MB/s)"
-                dot={false}
+                dot={showDots}
               />
             </LineChart>
           </ResponsiveContainer>
