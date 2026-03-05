@@ -1,0 +1,61 @@
+name: Build & Install
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, feat/compile-test ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build
+        run: |
+          chmod +x deploy/build.sh
+          ./deploy/build.sh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: altsuite-build
+          path: |
+            api/altsuite
+            frontend/out/
+
+  install:
+    name: Install
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: altsuite-build
+
+      - name: Restore artifact permissions
+        run: chmod +x api/altsuite
+
+      - name: Mock systemctl (systemd not available in CI)
+        run: |
+          printf '#!/bin/bash\necho "[CI mock] systemctl $*"\nexit 0\n' \
+            | sudo tee /usr/bin/systemctl
+          sudo chmod +x /usr/bin/systemctl
+
+      - name: Install
+        run: sudo ./deploy/install.sh
