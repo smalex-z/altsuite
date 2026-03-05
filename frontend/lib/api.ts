@@ -1,3 +1,33 @@
+// CatalogApp type for API responses
+export interface CatalogApp {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  replaces: string;
+  monthlyCost: number;
+  monthlySavings: number;
+  features: string[];
+  recommended: boolean;
+  installed: boolean;
+  requiredSpecs?: {
+    cpu: string;
+    memory: string;
+    network: string;
+  };
+}
+
+// Fetch all catalog apps from the Go API
+export async function getCatalogApps(): Promise<CatalogApp[]> {
+  const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
+  const res = await fetch(`${API_BASE}/api/packages`);
+  if (!res.ok) throw new Error("Failed to fetch catalog apps");
+  const data = await res.json();
+  // If the response is { packages: CatalogApp[], count: number }, extract .packages
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.packages)) return data.packages;
+  return [];
+}
 /**
  * API client placeholder for AltSuite backend.
  * Replace these with real fetch/axios calls when the API is ready.
@@ -62,9 +92,24 @@ export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week
   if (!API_BASE) {
     // Return mock data
     const now = Date.now();
-    const interval = range === "minute" ? 5000 : range === "hour" ? 60000 : 300000;
-    const count = range === "minute" ? 12 : range === "hour" ? 60 : 20;
-    
+    const interval =
+      range === "minute"
+        ? 5000 // 5 seconds, ~1 minute total with 12 points
+        : range === "hour"
+        ? 60000 // 1 minute, 60 points = 1 hour
+        : range === "day"
+        ? 60 * 60 * 1000 // 1 hour, 24 points = 24 hours
+        : 24 * 60 * 60 * 1000; // 1 day for "week" and "month"
+    const count =
+      range === "minute"
+        ? 12
+        : range === "hour"
+        ? 60
+        : range === "day"
+        ? 24
+        : range === "week"
+        ? 7
+        : 30; // "month"
     return {
       range,
       metrics: Array.from({ length: count }, (_, i) => ({
@@ -80,6 +125,23 @@ export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week
   if (!res.ok) throw new Error("Failed to fetch metrics history");
   return res.json();
 }
+
+
+/* 
+TODO: 
+- try calling the API endpoint and check what the return type looks like
+- make it dynamic in the frontend so if not installed it should say not installed
+- how should we store apps that are supported? JSON file? --> we can render supported apps from there
+- should update the JSON file created when installing to just have a list of the catalog apps similar to how page.tsx does in catalog
+*/
+
+export async function getInstalledPackages(){
+  if (!API_BASE) return { };
+  const res = await fetch(`${API_BASE}/api/services/packages`);
+  if (!res.ok) throw new Error("Failed to fetch installed packages");
+  return res.json();
+}
+
 
 // Add more API functions here as backend endpoints are ready:
 // getInstalledPackages(), startInstallation(), getInstallLogs(), etc.

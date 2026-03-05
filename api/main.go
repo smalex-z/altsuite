@@ -30,8 +30,8 @@ type ServiceActionRequest struct {
 }
 
 type PackageListResponse struct {
-	Packages []string `json:"packages"`
-	Count    int      `json:"count"`
+	Packages []SupportedApp `json:"packages"`
+	Count    int            `json:"count"`
 }
 
 var privOps *PrivilegedOps
@@ -56,14 +56,18 @@ func main() {
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
 	api.HandleFunc("/services/action", serviceActionHandler).Methods("POST")
-	
+
 	// Package management endpoints
 	api.HandleFunc("/packages", listPackagesHandler).Methods("GET")
 	api.HandleFunc("/packages/{name}", getPackageInfoHandler).Methods("GET")
 	api.HandleFunc("/packages/install", installPackageHandler).Methods("POST")
-	
+
 	// Docker endpoints (if Docker is installed)
 	api.HandleFunc("/docker/containers", listDockerContainersHandler).Methods("GET")
+
+	// Serve frontend static files
+	frontendDir := "/opt/altsuite/frontend"
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(frontendDir)))
 
 	// CORS middleware for development
 	r.Use(corsMiddleware)
@@ -91,12 +95,12 @@ func getServiceStatusHandler(w http.ResponseWriter, r *http.Request) {
 	serviceName := vars["name"]
 
 	isRunning, err := privOps.GetServiceStatus(serviceName)
-	
+
 	response := ServiceStatusResponse{
 		ServiceName: serviceName,
 		IsRunning:   isRunning,
 	}
-	
+
 	if err != nil {
 		response.Error = err.Error()
 	}
@@ -131,12 +135,12 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	output, err := privOps.SystemctlCommand(operation, req.ServiceName)
-	
+
 	response := ServiceStatusResponse{
 		ServiceName: req.ServiceName,
 		Output:      output,
 	}
-	
+
 	if err != nil {
 		response.Error = err.Error()
 		w.WriteHeader(http.StatusInternalServerError)
@@ -149,17 +153,14 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 // Handler for listing installed packages
 func listPackagesHandler(w http.ResponseWriter, r *http.Request) {
 	packages, err := privOps.ListInstalledPackages()
-	
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	response := PackageListResponse{
 		Packages: packages,
 		Count:    len(packages),
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -170,7 +171,7 @@ func getPackageInfoHandler(w http.ResponseWriter, r *http.Request) {
 	packageName := vars["name"]
 
 	info, err := privOps.GetPackageInfo(packageName)
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -180,12 +181,12 @@ func getPackageInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(info))
 }
 
-// Handler for installing packages
+// First ensure that it is one of the supported packages in side of supported_apps.json before installing
 func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Packages []string `json:"packages"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -196,12 +197,12 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := privOps.AptCommand(AptInstall, req.Packages...)
-	
+	output, err := privOps.PackageCommand(PackageInstall, req.Packages...)
+
 	response := map[string]interface{}{
 		"output": output,
 	}
-	
+
 	if err != nil {
 		response["error"] = err.Error()
 		w.WriteHeader(http.StatusInternalServerError)
@@ -214,7 +215,7 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 // Handler for listing Docker containers
 func listDockerContainersHandler(w http.ResponseWriter, r *http.Request) {
 	output, err := privOps.ListDockerContainers()
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

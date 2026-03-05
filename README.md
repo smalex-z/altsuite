@@ -34,37 +34,6 @@ Ensure you have the following installed on your system: (Commands for Ubuntu)
 - **Go 1.21+**: `sudo apt install golang-go` (use `brew install go` for Mac)
 - **Node.js 18+**: [Download](https://nodejs.org/) or use `nvm`
 
-### Development:
-
-#### Frontend:
-Install Packages first:
-
-```bash
-cd frontend
-npm install
-```
-
-Start the server
-```bash
-cd frontend
-npm run dev
-```
-
-#### API:
-Install Packages first:
-
-```bash
-cd api
-go mod download
-```
-
-Start the server
-
-```bash
-cd api
-go run .
-```
-
 ### Production Deployment
 
 **Prerequisites:**
@@ -72,20 +41,24 @@ go run .
 - Go 1.21+ installed (for building)
 - Node.js 18+ installed (for building frontend)
 
-**Build Steps:**
+**Deploy Steps:**
 
+
+Quick Install: (Frowned upon for security reasons)
 ```bash
-# 1. Build the Go API
-cd api
-go build -o altsuite main.go privileged.go
+curl -fsSL https://raw.githubusercontent.com/smalex-z/altsuite/main/deploy/quick-install.sh | bash
+```
+(Enter Sudo Password when prompted!)
 
-# 2. Build the Frontend
-cd ../frontend
-npm install
-npm run build
+OR
 
-# 3. Run the installation script
+Manual install:
+```bash
+# 1. Run the build script
+git clone https://github.com/smalex-z/altsuite.git
 cd ../deploy
+chmod +x ./build.sh
+./build.sh
 sudo ./install.sh
 ```
 
@@ -115,6 +88,36 @@ sudo systemctl stop altsuite
 The API will be available at `http://localhost:8080`
 
 **Security Note:** The installation configures passwordless sudo for specific operations (systemctl, apt-get, docker) limited to the `altsuite` user only. See `/etc/sudoers.d/altsuite` after installation.
+
+### Development:
+
+#### Frontend:
+Install Packages first:
+
+```bash
+cd frontend
+npm install
+```
+
+Start the server
+```bash
+cd frontend
+npm run dev
+```
+
+#### API:
+Install Packages first:
+
+```bash
+cd api
+go mod download
+```
+
+Start the server
+```
+cd api
+go run main.go
+```
 
 ## Requirements
 

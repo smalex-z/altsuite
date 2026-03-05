@@ -192,9 +192,33 @@ export default function OverviewPage() {
       }
     };
 
+    // Initial fetch on mount or when timeRange changes
     fetchHistoricalMetrics();
-    const interval = setInterval(fetchHistoricalMetrics, 5000);
-    return () => clearInterval(interval);
+
+    // Adjust polling interval based on the selected timeRange to avoid
+    // excessive traffic for longer historical windows.
+    let intervalMs: number;
+    switch (timeRange) {
+      case "minute":
+        intervalMs = 5000; // 5 seconds
+        break;
+      case "hour":
+        intervalMs = 15000; // 15 seconds
+        break;
+      case "day":
+        intervalMs = 60000; // 1 minute
+        break;
+      case "week":
+        intervalMs = 5 * 60 * 1000; // 5 minutes
+        break;
+      case "month":
+      default:
+        intervalMs = 15 * 60 * 1000; // 15 minutes
+        break;
+    }
+
+    const intervalId = window.setInterval(fetchHistoricalMetrics, intervalMs);
+    return () => clearInterval(intervalId);
   }, [timeRange]);
 
   const statCards = [
