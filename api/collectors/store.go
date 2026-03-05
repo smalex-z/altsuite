@@ -75,7 +75,7 @@ func Downsample(points []MetricsPoint, interval time.Duration) []MetricsPoint {
 
 	var result []MetricsPoint
 	bucketStart := points[0].Timestamp.Truncate(interval)
-	var sumCPU, sumMem, sumNet float64
+	var sumCPU, sumMem, sumNet, sumDisk float64
 	var count int
 
 	flush := func() {
@@ -85,6 +85,7 @@ func Downsample(points []MetricsPoint, interval time.Duration) []MetricsPoint {
 				CPU:       sumCPU / float64(count),
 				Memory:    sumMem / float64(count),
 				Network:   sumNet / float64(count),
+				Disk:      sumDisk / float64(count),
 			})
 		}
 	}
@@ -94,12 +95,13 @@ func Downsample(points []MetricsPoint, interval time.Duration) []MetricsPoint {
 		if bucket != bucketStart {
 			flush()
 			bucketStart = bucket
-			sumCPU, sumMem, sumNet = 0, 0, 0
+			sumCPU, sumMem, sumNet, sumDisk = 0, 0, 0, 0
 			count = 0
 		}
 		sumCPU += p.CPU
 		sumMem += p.Memory
 		sumNet += p.Network
+		sumDisk += p.Disk
 		count++
 	}
 	flush()
