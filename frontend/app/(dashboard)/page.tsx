@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -9,8 +9,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { Cpu, HardDrive, Activity } from "lucide-react";
+} from 'recharts';
+import { Cpu, HardDrive, Activity } from 'lucide-react';
 
 interface SystemMetrics {
   timestamp: string;
@@ -21,13 +21,27 @@ interface SystemMetrics {
 
 export default function OverviewPage() {
   const [metrics, setMetrics] = useState<SystemMetrics[]>([
-    { timestamp: "10:00", cpu: 25, memory: 45, network: 12 },
-    { timestamp: "10:05", cpu: 32, memory: 48, network: 15 },
-    { timestamp: "10:10", cpu: 28, memory: 46, network: 18 },
-    { timestamp: "10:15", cpu: 35, memory: 50, network: 14 },
-    { timestamp: "10:20", cpu: 30, memory: 49, network: 20 },
-    { timestamp: "10:25", cpu: 38, memory: 52, network: 16 },
-    { timestamp: "10:30", cpu: 33, memory: 51, network: 19 },
+    {
+      timestamp: '10:00', cpu: 25, memory: 45, network: 12,
+    },
+    {
+      timestamp: '10:05', cpu: 32, memory: 48, network: 15,
+    },
+    {
+      timestamp: '10:10', cpu: 28, memory: 46, network: 18,
+    },
+    {
+      timestamp: '10:15', cpu: 35, memory: 50, network: 14,
+    },
+    {
+      timestamp: '10:20', cpu: 30, memory: 49, network: 20,
+    },
+    {
+      timestamp: '10:25', cpu: 38, memory: 52, network: 16,
+    },
+    {
+      timestamp: '10:30', cpu: 33, memory: 51, network: 19,
+    },
   ]);
 
   const [currentStats, setCurrentStats] = useState({
@@ -43,12 +57,14 @@ export default function OverviewPage() {
       const newMemory = Math.floor(Math.random() * 15) + 45;
       const newNetwork = Math.floor(Math.random() * 15) + 10;
       const now = new Date();
-      const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+      const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
 
       setMetrics((prev) => {
         const updated = [
           ...prev.slice(-6),
-          { timestamp, cpu: newCpu, memory: newMemory, network: newNetwork },
+          {
+            timestamp, cpu: newCpu, memory: newMemory, network: newNetwork,
+          },
         ];
         return updated;
       });
@@ -64,24 +80,32 @@ export default function OverviewPage() {
   }, []);
 
   const statCards = [
-    { label: "CPU Usage", value: `${currentStats.cpu}%`, icon: Cpu, color: "blue" },
-    { label: "Memory", value: `${currentStats.memory}%`, icon: HardDrive, color: "purple" },
-    { label: "Network", value: `${currentStats.network} MB/s`, icon: Activity, color: "green" },
-    { label: "Disk Usage", value: `${currentStats.disk}%`, icon: HardDrive, color: "orange" },
+    {
+      label: 'CPU Usage', value: `${currentStats.cpu}%`, icon: Cpu, color: 'blue',
+    },
+    {
+      label: 'Memory', value: `${currentStats.memory}%`, icon: HardDrive, color: 'purple',
+    },
+    {
+      label: 'Network', value: `${currentStats.network} MB/s`, icon: Activity, color: 'green',
+    },
+    {
+      label: 'Disk Usage', value: `${currentStats.disk}%`, icon: HardDrive, color: 'orange',
+    },
   ];
 
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
-    green: "bg-green-50 text-green-600",
-    orange: "bg-orange-50 text-orange-600",
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    green: 'bg-green-50 text-green-600',
+    orange: 'bg-orange-50 text-orange-600',
   };
 
   const installedApps = [
-    { name: "Mattermost", status: "running", users: 42 },
-    { name: "GitLab", status: "running", users: 28 },
-    { name: "AppFlowy", status: "running", users: 15 },
-    { name: "Jitsi Meet", status: "running", users: 8 },
+    { name: 'Mattermost', status: 'running', users: 42 },
+    { name: 'GitLab', status: 'running', users: 28 },
+    { name: 'AppFlowy', status: 'running', users: 15 },
+    { name: 'Jitsi Meet', status: 'running', users: 8 },
   ];
 
   return (
@@ -124,9 +148,9 @@ export default function OverviewPage() {
               <YAxis stroke="#6b7280" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
                 }}
               />
               <Line
@@ -156,9 +180,9 @@ export default function OverviewPage() {
               <YAxis stroke="#6b7280" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
                 }}
               />
               <Line
@@ -188,7 +212,11 @@ export default function OverviewPage() {
                   <span className="text-xs text-green-600">Running</span>
                 </span>
               </div>
-              <p className="text-sm text-gray-600">{app.users} active users</p>
+              <p className="text-sm text-gray-600">
+                {app.users}
+                {' '}
+                active users
+              </p>
             </div>
           ))}
         </div>
