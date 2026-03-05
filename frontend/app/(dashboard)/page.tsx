@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -229,10 +229,10 @@ export default function OverviewPage() {
   ];
 
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
-    green: "bg-green-50 text-green-600",
-    orange: "bg-orange-50 text-orange-600",
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    green: 'bg-green-50 text-green-600',
+    orange: 'bg-orange-50 text-orange-600',
   };
 
   const timeRanges: { value: TimeRange; label: string }[] = [
@@ -244,10 +244,10 @@ export default function OverviewPage() {
   ];
 
   const installedApps = [
-    { name: "Mattermost", status: "running", users: 42 },
-    { name: "GitLab", status: "running", users: 28 },
-    { name: "AppFlowy", status: "running", users: 15 },
-    { name: "Jitsi Meet", status: "running", users: 8 },
+    { name: 'Mattermost', status: 'running', users: 42 },
+    { name: 'GitLab', status: 'running', users: 28 },
+    { name: 'AppFlowy', status: 'running', users: 15 },
+    { name: 'Jitsi Meet', status: 'running', users: 8 },
   ];
 
   return (
@@ -315,9 +315,9 @@ export default function OverviewPage() {
               <YAxis stroke="#6b7280" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
                 }}
                 formatter={(value: number) => formatToSigFigs(value)}
                 labelFormatter={(_label, payload) =>
@@ -355,9 +355,9 @@ export default function OverviewPage() {
               <YAxis stroke="#6b7280" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
                 }}
                 formatter={(value: number) => formatToSigFigs(value)}
                 labelFormatter={(_label, payload) =>
@@ -394,7 +394,11 @@ export default function OverviewPage() {
                   <span className="text-xs text-green-600">Running</span>
                 </span>
               </div>
-              <p className="text-sm text-gray-600">{app.users} active users</p>
+              <p className="text-sm text-gray-600">
+                {app.users}
+                {' '}
+                active users
+              </p>
             </div>
           ))}
         </div>

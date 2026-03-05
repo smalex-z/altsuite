@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Download, Shield, Check } from "lucide-react";
-import { getCatalogApps, CatalogApp } from "@/lib/api";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Download, Check } from 'lucide-react';
+import { getCatalogApps, CatalogApp } from '@/lib/api';
 
 export default function CatalogPage() {
+  const router = useRouter();
   const [apps, setApps] = useState<CatalogApp[]>([]);
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<string>('all');
 
   useEffect(() => {
     async function fetchApps() {
@@ -14,7 +16,8 @@ export default function CatalogPage() {
         const data = await getCatalogApps();
         setApps(data);
       } catch (error) {
-        console.error("Error fetching catalog apps:", error);
+        // eslint-disable-next-line no-console
+        console.error('Error fetching catalog apps:', error);
       }
     }
     fetchApps();
@@ -24,11 +27,10 @@ export default function CatalogPage() {
   const categories = Array.from(new Set(apps.map((app) => app.category)));
 
   // Filtered apps based on selected filter
-  const filteredApps = filter === "all" ? apps : apps.filter((app) => app.category === filter);
+  const filteredApps = filter === 'all' ? apps : apps.filter((app) => app.category === filter);
 
-  // Mock install handler
   function handleInstall(id: string) {
-    alert(`Install triggered for app id: ${id}`);
+    router.push(`/install?app=${id}`);
   }
 
   return (
@@ -43,11 +45,12 @@ export default function CatalogPage() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         <button
           key="all"
-          onClick={() => setFilter("all")}
+          type="button"
+          onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-            filter === "all"
-              ? "bg-blue-600 text-white"
-              : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+            filter === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           }`}
         >
           All
@@ -55,11 +58,12 @@ export default function CatalogPage() {
         {categories.map((category) => (
           <button
             key={category}
+            type="button"
             onClick={() => setFilter(category)}
             className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
               filter === category
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
             }`}
           >
             {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -72,7 +76,7 @@ export default function CatalogPage() {
           <div
             key={app.id}
             className={`bg-white rounded-lg border-2 p-6 transition-all ${
-              app.recommended ? "border-blue-200 shadow-md" : "border-gray-200"
+              app.recommended ? 'border-blue-200 shadow-md' : 'border-gray-200'
             }`}
           >
             <div className="flex items-start justify-between mb-3 gap-2">
@@ -95,19 +99,19 @@ export default function CatalogPage() {
             <p className="text-gray-600 mb-4">{app.description}</p>
 
             <p className="text-sm text-gray-700 mb-4">
-              Replaces:{" "}
+              Replaces:
+              {' '}
               <span className="font-semibold text-gray-900">{app.replaces}</span>
             </p>
-
 
             <div className="mb-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">
                 Key Features:
               </p>
               <ul className="space-y-1">
-                {app.features.map((feature, index) => (
+                {app.features.map((feature) => (
                   <li
-                    key={index}
+                    key={feature}
                     className="flex items-center gap-2 text-sm text-gray-600"
                   >
                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
@@ -124,25 +128,32 @@ export default function CatalogPage() {
                 </p>
                 <ul className="space-y-1">
                   <li className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium text-gray-800">CPU:</span> {app.requiredSpecs.cpu}
+                    <span className="font-medium text-gray-800">CPU:</span>
+                    {' '}
+                    {app.requiredSpecs.cpu}
                   </li>
                   <li className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium text-gray-800">Memory:</span> {app.requiredSpecs.memory}
+                    <span className="font-medium text-gray-800">Memory:</span>
+                    {' '}
+                    {app.requiredSpecs.memory}
                   </li>
                   <li className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium text-gray-800">Network:</span> {app.requiredSpecs.network}
+                    <span className="font-medium text-gray-800">Network:</span>
+                    {' '}
+                    {app.requiredSpecs.network}
                   </li>
                 </ul>
               </div>
             )}
 
             <button
+              type="button"
               onClick={() => handleInstall(app.id)}
               disabled={app.installed}
               className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                 app.installed
-                  ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
               {app.installed ? (

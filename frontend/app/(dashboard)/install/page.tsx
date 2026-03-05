@@ -1,44 +1,46 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Check, ChevronRight, Loader2, GitBranch, Settings, Box, Play } from "lucide-react";
+import { useState, useEffect } from 'react';
+import {
+  Check, ChevronRight, Loader2, GitBranch, Settings, Box, Play,
+} from 'lucide-react';
 
 const STEPS = [
-  { id: 1, label: "Select services", icon: Check },
-  { id: 2, label: "Configure", icon: Settings },
-  { id: 3, label: "Install", icon: Loader2 },
+  { id: 1, label: 'Select services', icon: Check },
+  { id: 2, label: 'Configure', icon: Settings },
+  { id: 3, label: 'Install', icon: Loader2 },
 ];
 
 const AVAILABLE_SERVICES = [
-  { id: "nextcloud", name: "Nextcloud", category: "Storage" },
-  { id: "rocketchat", name: "Rocket.Chat", category: "Communication" },
-  { id: "taiga", name: "Taiga", category: "Project Management" },
-  { id: "matomo", name: "Matomo", category: "Analytics" },
+  { id: 'nextcloud', name: 'Nextcloud', category: 'Storage' },
+  { id: 'rocketchat', name: 'Rocket.Chat', category: 'Communication' },
+  { id: 'taiga', name: 'Taiga', category: 'Project Management' },
+  { id: 'matomo', name: 'Matomo', category: 'Analytics' },
 ];
 
 const INSTALL_STAGES = [
-  { id: "cloning", label: "Cloning repositories", icon: GitBranch },
-  { id: "configuring", label: "Configuring services", icon: Settings },
-  { id: "building", label: "Building containers", icon: Box },
-  { id: "starting", label: "Starting services", icon: Play },
+  { id: 'cloning', label: 'Cloning repositories', icon: GitBranch },
+  { id: 'configuring', label: 'Configuring services', icon: Settings },
+  { id: 'building', label: 'Building containers', icon: Box },
+  { id: 'starting', label: 'Starting services', icon: Play },
 ];
 
 const MOCK_LOG_LINES = [
-  "[INFO] Starting installation for Nextcloud, Rocket.Chat",
-  "[INFO] Cloning Nextcloud repository...",
-  "[OK] Nextcloud cloned successfully",
-  "[INFO] Cloning Rocket.Chat repository...",
-  "[OK] Rocket.Chat cloned successfully",
-  "[INFO] Generating configuration files...",
-  "[OK] Configuration written to /opt/altsuite/nextcloud",
-  "[OK] Configuration written to /opt/altsuite/rocketchat",
-  "[INFO] Building Docker images...",
-  "[OK] nextcloud:latest built",
-  "[OK] rocketchat:latest built",
-  "[INFO] Starting containers...",
-  "[OK] Nextcloud is running on https://nextcloud.example.com",
-  "[OK] Rocket.Chat is running on https://chat.example.com",
-  "[DONE] Installation completed successfully.",
+  '[INFO] Starting installation for Nextcloud, Rocket.Chat',
+  '[INFO] Cloning Nextcloud repository...',
+  '[OK] Nextcloud cloned successfully',
+  '[INFO] Cloning Rocket.Chat repository...',
+  '[OK] Rocket.Chat cloned successfully',
+  '[INFO] Generating configuration files...',
+  '[OK] Configuration written to /opt/altsuite/nextcloud',
+  '[OK] Configuration written to /opt/altsuite/rocketchat',
+  '[INFO] Building Docker images...',
+  '[OK] nextcloud:latest built',
+  '[OK] rocketchat:latest built',
+  '[INFO] Starting containers...',
+  '[OK] Nextcloud is running on https://nextcloud.example.com',
+  '[OK] Rocket.Chat is running on https://chat.example.com',
+  '[DONE] Installation completed successfully.',
 ];
 
 export default function InstallWizardPage() {
@@ -48,37 +50,40 @@ export default function InstallWizardPage() {
   const [configErrors, setConfigErrors] = useState<Record<string, string>>({});
   const [installing, setInstalling] = useState(false);
   const [currentStage, setCurrentStage] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<{ id: number; text: string }[]>([]);
   const [complete, setComplete] = useState(false);
 
   const toggleService = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-    setConfigErrors((prev) => ({ ...prev, [id]: "" }));
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+    setConfigErrors((prev) => ({ ...prev, [id]: '' }));
   };
 
-  const updateConfig = (id: string, field: "port" | "domain", value: string) => {
+  const updateConfig = (id: string, field: 'port' | 'domain', value: string) => {
     setConfig((prev) => ({
       ...prev,
-      [id]: { ...(prev[id] ?? { port: "", domain: "" }), [field]: value },
+      [id]: { ...(prev[id] ?? { port: '', domain: '' }), [field]: value },
     }));
-    setConfigErrors((prev) => ({ ...prev, [id]: "" }));
+    setConfigErrors((prev) => ({ ...prev, [id]: '' }));
   };
 
   const validateConfig = (): boolean => {
     const errors: Record<string, string> = {};
     selectedIds.forEach((id) => {
       const c = config[id];
-      const port = c?.port?.trim() ?? "";
-      const domain = c?.domain?.trim() ?? "";
-      if (!port) errors[id] = "Port is required";
-      else if (!/^\d+$/.test(port) || parseInt(port, 10) > 65535)
-        errors[id] = "Invalid port (1-65535)";
-      if (!domain) errors[id] = (errors[id] ? errors[id] + "; " : "") + "Domain is required";
+      const port = c?.port?.trim() ?? '';
+      const domain = c?.domain?.trim() ?? '';
+      if (!port) errors[id] = 'Port is required';
+      else if (!/^\d+$/.test(port) || parseInt(port, 10) > 65535) errors[id] = 'Invalid port (1-65535)';
+      if (!domain) errors[id] = `${errors[id] ? `${errors[id]}; ` : ''}Domain is required`;
     });
     setConfigErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const startInstall = () => {
+    setInstalling(true);
+    setLogs([]);
+    setCurrentStage(0);
   };
 
   const handleNext = () => {
@@ -92,36 +97,39 @@ export default function InstallWizardPage() {
     }
   };
 
-  const startInstall = () => {
-    setInstalling(true);
-    setLogs([]);
-    setCurrentStage(0);
-  };
-
   useEffect(() => {
-    if (!installing || step !== 3) return;
+    if (!installing || step !== 3) return () => {};
     let logIndex = 0;
     const interval = setInterval(() => {
       if (logIndex < MOCK_LOG_LINES.length) {
-        setLogs((prev) => [...prev, MOCK_LOG_LINES[logIndex]]);
-        if (MOCK_LOG_LINES[logIndex].startsWith("[INFO] Building"))
-          setCurrentStage(2);
-        else if (MOCK_LOG_LINES[logIndex].startsWith("[INFO] Starting containers"))
-          setCurrentStage(3);
-        else if (MOCK_LOG_LINES[logIndex].startsWith("[DONE]")) {
+        setLogs((prev) => [...prev, { id: logIndex, text: MOCK_LOG_LINES[logIndex] }]);
+        if (MOCK_LOG_LINES[logIndex].startsWith('[INFO] Building')) setCurrentStage(2);
+        else if (MOCK_LOG_LINES[logIndex].startsWith('[INFO] Starting containers')) setCurrentStage(3);
+        else if (MOCK_LOG_LINES[logIndex].startsWith('[DONE]')) {
           setCurrentStage(4);
           setComplete(true);
           setInstalling(false);
         }
-        logIndex++;
+        logIndex += 1;
       }
     }, 600);
     return () => clearInterval(interval);
   }, [installing, step]);
 
-  const canNext =
-    (step === 1 && selectedIds.length > 0) ||
-    (step === 2 && selectedIds.length > 0);
+  const canNext = (step === 1 && selectedIds.length > 0)
+    || (step === 2 && selectedIds.length > 0);
+
+  const getStepCircleClass = (stepId: number) => {
+    if (step > stepId) return 'bg-blue-600 border-blue-600 text-white';
+    if (step === stepId) return 'border-blue-600 text-blue-600';
+    return 'border-gray-200 text-gray-400';
+  };
+
+  const getStageClass = (stageIndex: number) => {
+    if (stageIndex < currentStage) return 'bg-green-100 text-green-800';
+    if (stageIndex === currentStage) return 'bg-blue-100 text-blue-800';
+    return 'bg-gray-100 text-gray-500';
+  };
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -140,19 +148,13 @@ export default function InstallWizardPage() {
         {STEPS.map((s, i) => (
           <div key={s.id} className="flex items-center gap-2">
             <div
-              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-semibold ${
-                step > s.id
-                  ? "bg-blue-600 border-blue-600 text-white"
-                  : step === s.id
-                    ? "border-blue-600 text-blue-600"
-                    : "border-gray-200 text-gray-400"
-              }`}
+              className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-semibold ${getStepCircleClass(s.id)}`}
             >
               {step > s.id ? <Check className="w-5 h-5" /> : s.id}
             </div>
             <span
               className={
-                step >= s.id ? "text-gray-900 font-medium" : "text-gray-400"
+                step >= s.id ? 'text-gray-900 font-medium' : 'text-gray-400'
               }
             >
               {s.label}
@@ -173,13 +175,15 @@ export default function InstallWizardPage() {
             {AVAILABLE_SERVICES.map((svc) => (
               <label
                 key={svc.id}
+                htmlFor={svc.id}
                 className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                   selectedIds.includes(svc.id)
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <input
+                  id={svc.id}
                   type="checkbox"
                   checked={selectedIds.includes(svc.id)}
                   onChange={() => toggleService(svc.id)}
@@ -212,7 +216,7 @@ export default function InstallWizardPage() {
           <div className="space-y-6">
             {selectedIds.map((id) => {
               const svc = AVAILABLE_SERVICES.find((s) => s.id === id);
-              const c = config[id] ?? { port: "", domain: "" };
+              const c = config[id] ?? { port: '', domain: '' };
               const err = configErrors[id];
               return (
                 <div
@@ -224,36 +228,34 @@ export default function InstallWizardPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor={`${id}-port`} className="block text-sm font-medium text-gray-700 mb-1">
                         Port
+                        <input
+                          id={`${id}-port`}
+                          type="text"
+                          value={c.port}
+                          onChange={(e) => updateConfig(id, 'port', e.target.value)}
+                          placeholder="e.g. 8080"
+                          className={`w-full px-3 py-2 border rounded-lg ${
+                            err ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
                       </label>
-                      <input
-                        type="text"
-                        value={c.port}
-                        onChange={(e) =>
-                          updateConfig(id, "port", e.target.value)
-                        }
-                        placeholder="e.g. 8080"
-                        className={`w-full px-3 py-2 border rounded-lg ${
-                          err ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor={`${id}-domain`} className="block text-sm font-medium text-gray-700 mb-1">
                         Domain
+                        <input
+                          id={`${id}-domain`}
+                          type="text"
+                          value={c.domain}
+                          onChange={(e) => updateConfig(id, 'domain', e.target.value)}
+                          placeholder="e.g. app.example.com"
+                          className={`w-full px-3 py-2 border rounded-lg ${
+                            err ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
                       </label>
-                      <input
-                        type="text"
-                        value={c.domain}
-                        onChange={(e) =>
-                          updateConfig(id, "domain", e.target.value)
-                        }
-                        placeholder="e.g. app.example.com"
-                        className={`w-full px-3 py-2 border rounded-lg ${
-                          err ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
                     </div>
                   </div>
                   {err && (
@@ -275,13 +277,7 @@ export default function InstallWizardPage() {
             {INSTALL_STAGES.map((s, i) => (
               <div
                 key={s.id}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                  i < currentStage
-                    ? "bg-green-100 text-green-800"
-                    : i === currentStage
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-gray-100 text-gray-500"
-                }`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg ${getStageClass(i)}`}
               >
                 {i < currentStage ? (
                   <Check className="w-4 h-4" />
@@ -296,8 +292,8 @@ export default function InstallWizardPage() {
             {logs.length === 0 && !complete && (
               <span className="animate-pulse">Waiting to start...</span>
             )}
-            {logs.map((line, i) => (
-              <div key={i}>{line}</div>
+            {logs.map((log) => (
+              <div key={log.id}>{log.text}</div>
             ))}
             {complete && (
               <div className="mt-2 text-green-300 font-semibold">
@@ -310,6 +306,7 @@ export default function InstallWizardPage() {
 
       <div className="flex justify-between">
         <button
+          type="button"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1 || installing}
           className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -318,11 +315,12 @@ export default function InstallWizardPage() {
         </button>
         {step < 3 && (
           <button
+            type="button"
             onClick={handleNext}
             disabled={!canNext}
             className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {step === 2 ? "Start installation" : "Next"}
+            {step === 2 ? 'Start installation' : 'Next'}
           </button>
         )}
         {step === 3 && complete && (
