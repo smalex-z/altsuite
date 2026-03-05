@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/smalex/altsuite/collectors"
+	"github.com/smalex/altsuite/routes"
 )
 
 type HealthResponse struct {
@@ -37,11 +40,18 @@ func main() {
 	// Initialize privileged operations handler
 	privOps = NewPrivilegedOps()
 
+	// Start metrics collector
+	metricsCollector := collectors.NewMetricsCollector()
+	metricsCollector.Start(context.Background())
+
 	r := mux.NewRouter()
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/health", healthHandler).Methods("GET")
+
+	// System metrics endpoints
+	routes.RegisterMetricsRoutes(api, metricsCollector)
 	
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")

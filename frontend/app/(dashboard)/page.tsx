@@ -22,6 +22,55 @@ interface SystemMetrics {
 
 type TimeRange = "minute" | "hour" | "day" | "week" | "month";
 
+// Downsample array to max N points by taking evenly spaced samples
+function downsampleToMax<T>(data: T[], maxPoints: number): T[] {
+  if (data.length <= maxPoints) return data;
+  
+  const step = data.length / maxPoints;
+  const result: T[] = [];
+  
+  for (let i = 0; i < maxPoints; i++) {
+    const index = Math.floor(i * step);
+    result.push(data[index]);
+  }
+  
+  return result;
+}
+
+// Apply moving average smoothing
+function smoothData(data: SystemMetrics[], windowSize: number = 3): SystemMetrics[] {
+  if (data.length < windowSize) return data;
+  
+  const smoothed: SystemMetrics[] = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    const start = Math.max(0, i - Math.floor(windowSize / 2));
+    const end = Math.min(data.length, i + Math.ceil(windowSize / 2));
+    const window = data.slice(start, end);
+    
+    const avg = {
+      timestamp: data[i].timestamp,
+      cpu: Math.max(0, window.reduce((sum, d) => sum + d.cpu, 0) / window.length),
+      memory: Math.max(0, window.reduce((sum, d) => sum + d.memory, 0) / window.length),
+      network: Math.max(0, window.reduce((sum, d) => sum + d.network, 0) / window.length),
+    };
+    
+    smoothed.push(avg);
+  }
+  
+  return smoothed;
+}
+
+// Format number to max 4 significant figures
+function formatToSigFigs(value: number, sigFigs: number = 4): string {
+  if (value === 0) return "0";
+  
+  const magnitude = Math.floor(Math.log10(Math.abs(value)));
+  const decimals = Math.max(0, sigFigs - magnitude - 1);
+  
+  return value.toFixed(Math.min(decimals, 4));
+}
+
 export default function OverviewPage() {
   const [metrics, setMetrics] = useState<SystemMetrics[]>([]);
   const [timeRange, setTimeRange] = useState<TimeRange>("hour");
@@ -63,7 +112,7 @@ export default function OverviewPage() {
     const fetchHistoricalMetrics = async () => {
       try {
         const data = await getMetricsHistory(timeRange);
-        const formattedMetrics = data.metrics.map((m) => {
+        let formattedMetrics = data.metrics.map((m) => {
           const date = new Date(m.timestamp);
           let timestamp: string;
           
@@ -82,6 +131,16 @@ export default function OverviewPage() {
             network: m.network,
           };
         });
+
+        // Downsample to max 24 points
+        formattedMetrics = downsampleToMax(formattedMetrics, 24);
+
+        // Apply smoothing if there are enough points (smoothing works better with more data)
+        if (formattedMetrics.length >= 5) {
+          const windowSize = Math.min(5, Math.ceil(formattedMetrics.length / 8));
+          formattedMetrics = smoothData(formattedMetrics, windowSize);
+        }
+
         setMetrics(formattedMetrics);
         setError(null);
       } catch (err) {
@@ -193,20 +252,23 @@ export default function OverviewPage() {
                   border: "1px solid #e5e7eb",
                   borderRadius: "0.5rem",
                 }}
+                formatter={(value: number) => formatToSigFigs(value)}
               />
               <Line
-                type="monotone"
+                type="natural"
                 dataKey="cpu"
                 stroke="#3b82f6"
                 strokeWidth={2}
                 name="CPU %"
+                dot={false}
               />
               <Line
-                type="monotone"
+                type="natural"
                 dataKey="memory"
                 stroke="#8b5cf6"
                 strokeWidth={2}
                 name="Memory %"
+                dot={false}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -225,13 +287,15 @@ export default function OverviewPage() {
                   border: "1px solid #e5e7eb",
                   borderRadius: "0.5rem",
                 }}
+                formatter={(value: number) => formatToSigFigs(value)}
               />
               <Line
-                type="monotone"
+                type="natural"
                 dataKey="network"
                 stroke="#10b981"
                 strokeWidth={2}
                 name="Network (MB/s)"
+                dot={false}
               />
             </LineChart>
           </ResponsiveContainer>
