@@ -108,6 +108,13 @@ func (c *MetricsCollector) collectNetwork(now time.Time) float64 {
 		return 0
 	}
 
+	if totalBytes < c.prevNetBytes {
+		// Counter reset or wrap-around detected; re-baseline and skip this sample.
+		c.prevNetBytes = totalBytes
+		c.prevNetTime = now
+		return 0
+	}
+
 	deltaBytes := totalBytes - c.prevNetBytes
 	mbPerSec := float64(deltaBytes) / elapsed / (1024 * 1024)
 
