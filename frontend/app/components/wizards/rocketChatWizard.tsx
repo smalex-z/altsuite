@@ -4,6 +4,11 @@ import React from 'react';
 import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 // Define the fields for RocketChat setup
+
+/*
+Nice to haves: 
+We can set up grafana for rocketChat in bash script ourselves but is non MVP atm 
+*/
 const rocketChatFields: WizardFieldConfig[] = [
   {
     key: 'mongoDBURL',
@@ -11,7 +16,7 @@ const rocketChatFields: WizardFieldConfig[] = [
     type: 'url',
     placeholder: 'mongodb://username:password@localhost:27017/rocketchat',
     description: 'Enter the full MongoDB connection string including credentials',
-    required: true,
+    required: false,
     validate: (value: string) => {
       if (!value.startsWith('mongodb://') && !value.startsWith('mongodb+srv://')) {
         return 'MongoDB URL must start with mongodb:// or mongodb+srv://';
@@ -20,27 +25,27 @@ const rocketChatFields: WizardFieldConfig[] = [
     },
   },
   {
-    key: 'grafanaURL',
-    label: 'What is your Grafana dashboard URL?',
-    type: 'url',
-    placeholder: 'https://grafana.example.com',
-    description: 'Enter the URL where Grafana is accessible',
-    required: true,
-  },
-  {
-    key: 'adminEmail',
-    label: 'What email should we use for the admin account?',
-    type: 'email',
-    placeholder: 'admin@example.com',
-    description: 'This will be used to create the initial administrator account',
-    required: true,
-  },
-  {
-    key: 'siteName',
-    label: 'What would you like to name your RocketChat instance?',
+    key: 'Release',
+    label: 'What version of RocketChat would you like to install? Refer to https://github.com/RocketChat/Rocket.Chat/releases',
     type: 'text',
-    placeholder: 'My Company Chat',
-    description: 'This name will appear in the title and header',
+    placeholder: '8.0.2',
+    description: 'Enter the version of RocketChat you want to install',
+    required: true,
+  },
+  {
+    key: 'Domain',
+    label: 'What is the domain name for your RocketChat instance?',
+    type: 'text',
+    placeholder: 'localhost',
+    description: 'such as localhost or chat.example.com',
+    required: true,
+  },
+  {
+    key: 'Registration token',
+    label: 'What is the registration token for your RocketChat instance?',
+    type: 'text',
+    placeholder: 'your-registration-token',
+    description: 'Enter the registration token for your RocketChat instance if you recieved one from sales team',
     required: false,
   },
 ];
@@ -52,36 +57,11 @@ type RocketChatWizardProps = {
 const RocketChatWizard: React.FC<RocketChatWizardProps> = ({ onComplete }) => {
   const handleComplete = async (data: Record<string, string>) => {
     console.log('RocketChat setup completed with data:', data);
-    
-    // TODO: Send to backend API
-    // Example:
-    // try {
-    //   const response = await fetch('/api/services/rocketchat/setup', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'Authorization': `Bearer ${getAuthToken()}`,
-    //     },
-    //     body: JSON.stringify(data),
-    //   });
-    //   
-    //   if (!response.ok) {
-    //     throw new Error('Setup failed');
-    //   }
-    //   
-    //   const result = await response.json();
-    //   console.log('Setup successful:', result);
-    // } catch (error) {
-    //   console.error('Setup error:', error);
-    //   // Handle error (show toast, etc.)
-    // }
-
     // Call parent callback if provided
     if (onComplete) {
       onComplete(data);
     }
   };
-
   return (
     <ServiceWizard
       fields={rocketChatFields}

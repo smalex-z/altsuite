@@ -26,13 +26,31 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
   serviceName = 'Service',
   initialData = {},
 }) => {
+  // Initialize formData with all field keys as empty strings, then override with initialData
+  const initializeFormData = () => {
+    const emptyFields: Record<string, string> = {};
+    fields.forEach(field => {
+      emptyFields[field.key] = '';
+    });
+    return { ...emptyFields, ...initialData };
+  };
+
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Record<string, string>>(initialData);
+  const [formData, setFormData] = useState<Record<string, string>>(initializeFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const currentField = fields[currentStep];
   const progress = ((currentStep + 1) / fields.length) * 100;
   const isLastStep = currentStep === fields.length - 1;
+
+  // Helper function to ensure all fields are present with at least empty strings
+  const ensureAllFieldsPresent = (data: Record<string, string>): Record<string, string> => {
+    const completeData: Record<string, string> = {};
+    fields.forEach(field => {
+      completeData[field.key] = data[field.key] || '';
+    });
+    return completeData;
+  };
 
   const validateField = (field: WizardFieldConfig, value: string): string | undefined => {
     // Check required
@@ -72,8 +90,25 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
   };
 
   const handleNext = () => {
+    // Ensure current field has a value (even if empty string)
+    if (!(currentField.key in formData)) {
+      setFormData({ ...formData, [currentField.key]: '' });
+    }
+
+    if(fields[currentStep].required == false){
+      if(isLastStep){
+        // Ensure all fields are present in final data
+        const completeData = ensureAllFieldsPresent(formData);
+        onComplete(completeData);
+        return
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
+      return;
+    }
+
     const error = validateField(currentField, formData[currentField.key] || '');
-    
+
     if (error) {
       setErrors({ ...errors, [currentField.key]: error });
       return;
@@ -85,8 +120,9 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
     setErrors(newErrors);
 
     if (isLastStep) {
-      // Submit the form
-      onComplete(formData);
+      // Submit the form with all fields guaranteed to be present
+      const completeData = ensureAllFieldsPresent(formData);
+      onComplete(completeData);
     } else {
       setCurrentStep(currentStep + 1);
     }

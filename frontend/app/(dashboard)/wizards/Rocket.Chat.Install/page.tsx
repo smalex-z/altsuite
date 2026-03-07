@@ -21,7 +21,6 @@ export default function WizardDemoPage() {
   TODO:
   - should include actual API call
   - should handle accepted state and success state with UI feedback
-  - should have enter a loading state that prevents multiple submissions and also shows a spinner or estimated download time 
   - vision is to have some kind of terminal that is running and showing the progress of the installation as long as app is being installed.
   */
   const handleWizardComplete = (data: Record<string, string>) => {
