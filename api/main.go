@@ -1,12 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/smalex/altsuite/collectors"
+	"github.com/smalex/altsuite/routes"
 )
 
 type HealthResponse struct {
@@ -31,17 +37,31 @@ type PackageListResponse struct {
 	Count    int            `json:"count"`
 }
 
+const shutdownTimeout = 5 * time.Second
+
 var privOps *PrivilegedOps
 
 func main() {
 	// Initialize privileged operations handler
 	privOps = NewPrivilegedOps()
 
+	// Create a cancellable context for the metrics collector; it will be
+	// cancelled during graceful shutdown so the background goroutine exits.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start metrics collector
+	metricsCollector := collectors.NewMetricsCollector()
+	metricsCollector.Start(ctx)
+
 	r := mux.NewRouter()
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/health", healthHandler).Methods("GET")
+
+	// System metrics endpoints
+	routes.RegisterMetricsRoutes(api, metricsCollector)
 
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
@@ -64,9 +84,33 @@ func main() {
 
 	// Start server
 	port := ":8080"
-	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(port, r); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    port,
+		Handler: r,
+	}
+
+	// Listen for OS signals to trigger graceful shutdown.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		log.Printf("Server starting on port %s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	<-quit
+	log.Println("Server shutting down...")
+
+	// Cancel the metrics collector context first.
+	cancel()
+
+	// Give in-flight requests up to 5 seconds to complete.
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer shutdownCancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
 	}
 }
 

@@ -17,6 +17,14 @@ echo "✓ API binary created: api/altsuite"
 # Build Frontend
 echo "Building Frontend..."
 cd "$PROJECT_ROOT/frontend"
+
+# Fix ownership if .next or out were previously built as root
+if [ -d ".next" ]; then
+    chown -R "$(id -u):$(id -g)" .next 2>/dev/null || true
+fi
+if [ -d "out" ]; then
+    chown -R "$(id -u):$(id -g)" out 2>/dev/null || true
+fi
 if [ ! -d "node_modules" ]; then
     echo "Installing npm packages..."
     npm install

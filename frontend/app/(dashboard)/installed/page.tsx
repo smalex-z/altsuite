@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 import {
   Play,
   Square,
@@ -9,12 +9,12 @@ import {
   ExternalLink,
   FileText,
   RotateCcw,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface AppData {
   id: string;
   name: string;
-  status: "running" | "stopped";
+  status: 'running' | 'stopped';
   version: string;
   replaces: string;
   monthlySavings: number;
@@ -27,79 +27,75 @@ interface AppData {
 
 const MOCK_APPS: AppData[] = [
   {
-    id: "1",
-    name: "Mattermost",
-    status: "running",
-    version: "7.8.0",
-    replaces: "Slack Enterprise",
+    id: '1',
+    name: 'Mattermost',
+    status: 'running',
+    version: '7.8.0',
+    replaces: 'Slack Enterprise',
     monthlySavings: 840,
     users: 42,
-    uptime: "15d 8h",
-    memoryUsage: "2.4 GB",
-    cpuUsage: "12%",
-    appUrl: "https://chat.example.com",
+    uptime: '15d 8h',
+    memoryUsage: '2.4 GB',
+    cpuUsage: '12%',
+    appUrl: 'https://chat.example.com',
   },
   {
-    id: "2",
-    name: "GitLab",
-    status: "running",
-    version: "16.7.2",
-    replaces: "GitHub Enterprise",
+    id: '2',
+    name: 'GitLab',
+    status: 'running',
+    version: '16.7.2',
+    replaces: 'GitHub Enterprise',
     monthlySavings: 1050,
     users: 28,
-    uptime: "23d 14h",
-    memoryUsage: "4.8 GB",
-    cpuUsage: "18%",
-    appUrl: "https://git.example.com",
+    uptime: '23d 14h',
+    memoryUsage: '4.8 GB',
+    cpuUsage: '18%',
+    appUrl: 'https://git.example.com',
   },
   {
-    id: "3",
-    name: "AppFlowy",
-    status: "running",
-    version: "0.4.5",
-    replaces: "Notion Business",
+    id: '3',
+    name: 'AppFlowy',
+    status: 'running',
+    version: '0.4.5',
+    replaces: 'Notion Business',
     monthlySavings: 600,
     users: 15,
-    uptime: "8d 3h",
-    memoryUsage: "1.2 GB",
-    cpuUsage: "8%",
-    appUrl: "https://appflowy.example.com",
+    uptime: '8d 3h',
+    memoryUsage: '1.2 GB',
+    cpuUsage: '8%',
+    appUrl: 'https://appflowy.example.com',
   },
   {
-    id: "4",
-    name: "Jitsi Meet",
-    status: "running",
-    version: "2.0.9220",
-    replaces: "Zoom Business",
+    id: '4',
+    name: 'Jitsi Meet',
+    status: 'running',
+    version: '2.0.9220',
+    replaces: 'Zoom Business',
     monthlySavings: 552,
     users: 8,
-    uptime: "12d 19h",
-    memoryUsage: "1.8 GB",
-    cpuUsage: "15%",
-    appUrl: "https://meet.example.com",
+    uptime: '12d 19h',
+    memoryUsage: '1.8 GB',
+    cpuUsage: '15%',
+    appUrl: 'https://meet.example.com',
   },
 ];
 
-const MOCK_LOGS =
-  "2024-02-20 10:33:14 [INFO] Mattermost service started\n2024-02-20 10:33:15 [INFO] Listening on 0.0.0.0:8065\n2024-02-20 10:33:16 [INFO] Database connection pool ready\n2024-02-20 10:33:17 [INFO] WebSocket server listening\n";
+const MOCK_LOGS = '2024-02-20 10:33:14 [INFO] Mattermost service started\n2024-02-20 10:33:15 [INFO] Listening on 0.0.0.0:8065\n2024-02-20 10:33:16 [INFO] Database connection pool ready\n2024-02-20 10:33:17 [INFO] WebSocket server listening\n';
 
 export default function InstalledAppsPage() {
   const [apps, setApps] = useState<AppData[]>(MOCK_APPS);
   const [logViewerApp, setLogViewerApp] = useState<string | null>(null);
   const [configApp, setConfigApp] = useState<string | null>(null);
+  const [pendingUninstallId, setPendingUninstallId] = useState<string | null>(null);
 
   const toggleAppStatus = (id: string) => {
-    setApps((prev) =>
-      prev.map((app) =>
-        app.id === id
-          ? {
-              ...app,
-              status:
-                app.status === "running" ? ("stopped" as const) : ("running" as const),
-            }
-          : app
-      )
-    );
+    setApps((prev) => prev.map((app) => (app.id === id
+      ? {
+        ...app,
+        status:
+                app.status === 'running' ? ('stopped' as const) : ('running' as const),
+      }
+      : app)));
   };
 
   const handleRestart = (id: string) => {
@@ -109,9 +105,12 @@ export default function InstalledAppsPage() {
   };
 
   const handleUninstall = (id: string) => {
-    if (confirm("Are you sure you want to uninstall this application?")) {
-      setApps((prev) => prev.filter((app) => app.id !== id));
-    }
+    setPendingUninstallId(id);
+  };
+
+  const confirmUninstall = () => {
+    setApps((prev) => prev.filter((app) => app.id !== pendingUninstallId));
+    setPendingUninstallId(null);
   };
 
   return (
@@ -133,7 +132,7 @@ export default function InstalledAppsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Running Services</p>
           <p className="text-3xl font-bold text-green-600">
-            {apps.filter((a) => a.status === "running").length}
+            {apps.filter((a) => a.status === 'running').length}
           </p>
         </div>
       </div>
@@ -150,24 +149,28 @@ export default function InstalledAppsPage() {
                   <h3 className="text-xl font-bold text-gray-900">{app.name}</h3>
                   <span
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm ${
-                      app.status === "running"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
+                      app.status === 'running'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
                     }`}
                   >
                     <div
                       className={`w-2 h-2 rounded-full ${
-                        app.status === "running"
-                          ? "bg-green-500 animate-pulse"
-                          : "bg-gray-400"
+                        app.status === 'running'
+                          ? 'bg-green-500 animate-pulse'
+                          : 'bg-gray-400'
                       }`}
                     />
-                    {app.status === "running" ? "Running" : "Stopped"}
+                    {app.status === 'running' ? 'Running' : 'Stopped'}
                   </span>
-                  <span className="text-sm text-gray-500">v{app.version}</span>
+                  <span className="text-sm text-gray-500">
+                    v
+                    {app.version}
+                  </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-3">
-                  Replaces:{" "}
+                  Replaces:
+                  {' '}
                   <span className="font-medium text-gray-900">
                     {app.replaces}
                   </span>
@@ -176,33 +179,32 @@ export default function InstalledAppsPage() {
 
               <div className="flex flex-wrap gap-2">
                 <button
+                  type="button"
                   onClick={() => toggleAppStatus(app.id)}
                   className={`p-2 rounded-lg border transition-colors ${
-                    app.status === "running"
-                      ? "border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100"
-                      : "border-green-200 bg-green-50 text-green-600 hover:bg-green-100"
+                    app.status === 'running'
+                      ? 'border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100'
+                      : 'border-green-200 bg-green-50 text-green-600 hover:bg-green-100'
                   }`}
-                  title={app.status === "running" ? "Stop" : "Start"}
+                  title={app.status === 'running' ? 'Stop' : 'Start'}
                 >
-                  {app.status === "running" ? (
+                  {app.status === 'running' ? (
                     <Square className="w-5 h-5" />
                   ) : (
                     <Play className="w-5 h-5" />
                   )}
                 </button>
                 <button
-                  onClick={() =>
-                    setLogViewerApp(logViewerApp === app.name ? null : app.name)
-                  }
+                  type="button"
+                  onClick={() => setLogViewerApp(logViewerApp === app.name ? null : app.name)}
                   className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
                   title="View logs"
                 >
                   <FileText className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() =>
-                    setConfigApp(configApp === app.name ? null : app.name)
-                  }
+                  type="button"
+                  onClick={() => setConfigApp(configApp === app.name ? null : app.name)}
                   className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
                   title="Configuration"
                 >
@@ -220,26 +222,51 @@ export default function InstalledAppsPage() {
                   </a>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleRestart(app.id)}
                   className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
                   title="Restart"
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={() => handleUninstall(app.id)}
-                  className="p-2 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                  title="Uninstall"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                {pendingUninstallId === app.id ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={confirmUninstall}
+                      className="px-3 py-1 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingUninstallId(null)}
+                      className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleUninstall(app.id)}
+                    className="p-2 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                    title="Uninstall"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
             {logViewerApp === app.name && (
               <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                  Log viewer — {app.name} (demo)
+                  Log viewer —
+                  {' '}
+                  {app.name}
+                  {' '}
+                  (demo)
                 </h4>
                 <pre className="text-xs text-gray-800 font-mono whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto">
                   {MOCK_LOGS}
@@ -253,14 +280,21 @@ export default function InstalledAppsPage() {
             {configApp === app.name && (
               <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                  Configuration — {app.name} (demo)
+                  Configuration —
+                  {' '}
+                  {app.name}
+                  {' '}
+                  (demo)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-500">Port:</span> 8065
+                    <span className="text-gray-500">Port:</span>
+                    {' '}
+                    8065
                   </div>
                   <div>
-                    <span className="text-gray-500">Domain:</span>{" "}
+                    <span className="text-gray-500">Domain:</span>
+                    {' '}
                     chat.example.com
                   </div>
                   <p className="text-xs text-gray-500 col-span-full">
@@ -290,7 +324,7 @@ export default function InstalledAppsPage() {
               <div>
                 <p className="text-xs text-gray-500 mb-1">Status</p>
                 <p className="font-semibold text-gray-900">
-                  {app.status === "running" ? "Healthy" : "Inactive"}
+                  {app.status === 'running' ? 'Healthy' : 'Inactive'}
                 </p>
               </div>
             </div>

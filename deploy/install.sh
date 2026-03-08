@@ -63,13 +63,14 @@ if [ "$MODE" = "altsuite" ]; then
     fi
 
     echo "Deploying binary..."
-    cp "$PROJECT_ROOT/api/altsuite" "$INSTALL_DIR/bin/altsuite"
+    cp -f "$PROJECT_ROOT/api/altsuite" "$INSTALL_DIR/bin/altsuite"
     chmod +x "$INSTALL_DIR/bin/altsuite"
     chown "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/bin/altsuite"
 
     if [ -d "$PROJECT_ROOT/frontend/out" ]; then
         echo "Deploying frontend..."
-        cp -r "$PROJECT_ROOT/frontend/out/." "$INSTALL_DIR/frontend/"
+        rm -rf "$INSTALL_DIR/frontend/*"
+        cp -rf "$PROJECT_ROOT/frontend/out/." "$INSTALL_DIR/frontend/"
         chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/frontend"
     fi
 

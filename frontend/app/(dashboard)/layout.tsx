@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingBag, Server, Wrench } from "lucide-react";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard, Package, ShoppingBag, Server, Wrench,
+} from 'lucide-react';
 
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Overview", end: true },
@@ -44,8 +46,8 @@ export default function DashboardLayout({
                     href={item.href}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? "bg-blue-50 text-blue-600"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <item.icon className="w-5 h-5 shrink-0" />
