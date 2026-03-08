@@ -48,6 +48,16 @@ if [ "$MODE" = "service" ]; then
                     rm -rf "$SERVICE_DIR/volumes"
                 fi
                 ;;
+            outline)
+                echo "Stopping Outline containers..."
+                cd "$SERVICE_DIR"
+                docker compose down || true
+                read -p "Remove all Outline data/volumes? (y/N): " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    docker compose down -v || true
+                fi
+                ;;
         esac
         echo "Removing service directory $SERVICE_DIR..."
         rm -rf "$SERVICE_DIR"

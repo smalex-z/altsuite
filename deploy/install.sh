@@ -12,6 +12,7 @@ fi
 # Parse arguments
 MODE="altsuite"
 SERVICE_NAME_ARG=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ $# -ge 1 ]; then
     MODE="service"
@@ -31,7 +32,6 @@ if [ "$MODE" = "altsuite" ]; then
     INSTALL_USER="altsuite"
     INSTALL_DIR="/opt/altsuite"
     SERVICE_NAME="altsuite"
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
     # Create altsuite user if it doesn't exist
@@ -120,9 +120,12 @@ if [ "$MODE" = "service" ]; then
         caldotcom)
             "$SCRIPT_DIR/services/caldotcom-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
             ;;
+        outline)
+            "$SCRIPT_DIR/services/outline-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            ;;
         *)
             echo "Unknown service: $SERVICE_NAME"
-            echo "Supported services: mattermost, penpot, gitea, caldotcom"
+            echo "Supported services: mattermost, penpot, gitea, caldotcom, outline"
             exit 1
             ;;
     esac

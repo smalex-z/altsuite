@@ -49,5 +49,6 @@ chmod +x "$SCRIPT_DIR/install.sh" \
     "$SCRIPT_DIR/services/mattermost-install.sh" \
     "$SCRIPT_DIR/services/penpot-install.sh" \
     "$SCRIPT_DIR/services/gitea-install.sh" \
-    "$SCRIPT_DIR/services/caldotcom-install.sh"
+    "$SCRIPT_DIR/services/caldotcom-install.sh" \
+    "$SCRIPT_DIR/services/outline-install.sh"
 echo "✓ Installer scripts are now executable."
