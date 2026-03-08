@@ -70,7 +70,7 @@
   },
   {
     "id": "4",
-    "name": "Jitsi Meet",
+    "name": "JitsiMeet",
     "description": "Secure and feature-rich video conferencing solution with screen sharing and recording.",
     "category": "Communication",
     "replaces": "Zoom Business",

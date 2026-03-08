@@ -159,7 +159,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {serviceName} Setup
+              {serviceName} setup wizard
             </h1>
             <p className="text-sm text-gray-600 mt-1">
               Step {currentStep + 1} of {fields.length}
