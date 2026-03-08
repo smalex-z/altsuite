@@ -19,8 +19,8 @@ export interface CatalogApp {
 
 // Fetch all catalog apps from the Go API
 export async function getCatalogApps(): Promise<CatalogApp[]> {
-  const res = await fetch("/api/packages");
-  if (!res.ok) throw new Error("Failed to fetch catalog apps");
+  const res = await fetch('/api/packages');
+  if (!res.ok) throw new Error('Failed to fetch catalog apps');
   const data = await res.json();
   // If the response is { packages: CatalogApp[], count: number }, extract .packages
   if (Array.isArray(data)) return data;
@@ -28,21 +28,21 @@ export async function getCatalogApps(): Promise<CatalogApp[]> {
   return [];
 }
 export async function getHealth(): Promise<{ status: string; timestamp: string }> {
-  const res = await fetch("/api/health");
-  if (!res.ok) throw new Error("Health check failed");
+  const res = await fetch('/api/health');
+  if (!res.ok) throw new Error('Health check failed');
   return res.json();
 }
 
 export async function getServiceStatus(serviceName: string) {
   const res = await fetch(`/api/services/${serviceName}/status`);
-  if (!res.ok) throw new Error("Service status failed");
+  if (!res.ok) throw new Error('Service status failed');
   return res.json();
 }
 
-export async function serviceAction(serviceName: string, action: "start" | "stop" | "restart" | "enable" | "disable") {
-  const res = await fetch("/api/services/action", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+export async function serviceAction(serviceName: string, action: 'start' | 'stop' | 'restart' | 'enable' | 'disable') {
+  const res = await fetch('/api/services/action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ service_name: serviceName, action }),
   });
   if (!res.ok) throw new Error('Service action failed');
@@ -59,8 +59,8 @@ export interface SystemMetric {
 }
 
 export async function getCurrentMetrics(): Promise<SystemMetric> {
-  const res = await fetch("/api/metrics/current");
-  if (!res.ok) throw new Error("Failed to fetch current metrics");
+  const res = await fetch('/api/metrics/current');
+  if (!res.ok) throw new Error('Failed to fetch current metrics');
   return res.json();
 }
 
@@ -69,7 +69,7 @@ export async function getMetricsHistory(range: 'minute' | 'hour' | 'day' | 'week
   metrics: Array<{ timestamp: string; cpu: number; memory: number; network: number }>;
 }> {
   const res = await fetch(`/api/metrics/history?range=${range}`);
-  if (!res.ok) throw new Error("Failed to fetch metrics history");
+  if (!res.ok) throw new Error('Failed to fetch metrics history');
   return res.json();
 }
 
@@ -83,9 +83,9 @@ TODO:
   of the catalog apps similar to how page.tsx does in catalog
 */
 
-export async function getInstalledPackages(){
-  const res = await fetch("/api/services/packages");
-  if (!res.ok) throw new Error("Failed to fetch installed packages");
+export async function getInstalledPackages() {
+  const res = await fetch('/api/services/packages');
+  if (!res.ok) throw new Error('Failed to fetch installed packages');
   return res.json();
 }
 
