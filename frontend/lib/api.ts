@@ -19,9 +19,9 @@ export interface CatalogApp {
 
 // Fetch all catalog apps from the Go API
 export async function getCatalogApps(): Promise<CatalogApp[]> {
-  const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
+  const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL ?? '') : '';
   const res = await fetch(`${API_BASE}/api/packages`);
-  if (!res.ok) throw new Error("Failed to fetch catalog apps");
+  if (!res.ok) throw new Error('Failed to fetch catalog apps');
   const data = await res.json();
   // If the response is { packages: CatalogApp[], count: number }, extract .packages
   if (Array.isArray(data)) return data;
@@ -34,30 +34,30 @@ export async function getCatalogApps(): Promise<CatalogApp[]> {
  * Base URL can be set via NEXT_PUBLIC_API_URL (e.g. http://localhost:8080).
  */
 
-const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
+const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL ?? '') : '';
 
 export async function getHealth(): Promise<{ status: string; timestamp: string }> {
-  if (!API_BASE) return { status: "ok", timestamp: new Date().toISOString() };
+  if (!API_BASE) return { status: 'ok', timestamp: new Date().toISOString() };
   const res = await fetch(`${API_BASE}/api/health`);
-  if (!res.ok) throw new Error("Health check failed");
+  if (!res.ok) throw new Error('Health check failed');
   return res.json();
 }
 
 export async function getServiceStatus(serviceName: string) {
-  if (!API_BASE) return { service_name: serviceName, is_running: true, output: "" };
+  if (!API_BASE) return { service_name: serviceName, is_running: true, output: '' };
   const res = await fetch(`${API_BASE}/api/services/${serviceName}/status`);
-  if (!res.ok) throw new Error("Service status failed");
+  if (!res.ok) throw new Error('Service status failed');
   return res.json();
 }
 
-export async function serviceAction(serviceName: string, action: "start" | "stop" | "restart" | "enable" | "disable") {
+export async function serviceAction(serviceName: string, action: 'start' | 'stop' | 'restart' | 'enable' | 'disable') {
   if (!API_BASE) return { success: true };
   const res = await fetch(`${API_BASE}/api/services/action`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ service_name: serviceName, action }),
   });
-  if (!res.ok) throw new Error("Service action failed");
+  if (!res.ok) throw new Error('Service action failed');
   return res.json();
 }
 
@@ -81,35 +81,33 @@ export async function getCurrentMetrics(): Promise<SystemMetric> {
     };
   }
   const res = await fetch(`${API_BASE}/api/metrics/current`);
-  if (!res.ok) throw new Error("Failed to fetch current metrics");
+  if (!res.ok) throw new Error('Failed to fetch current metrics');
   return res.json();
 }
 
-export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week" | "month"): Promise<{
+export async function getMetricsHistory(range: 'minute' | 'hour' | 'day' | 'week' | 'month'): Promise<{
   range: string;
   metrics: Array<{ timestamp: string; cpu: number; memory: number; network: number }>;
 }> {
   if (!API_BASE) {
     // Return mock data
     const now = Date.now();
-    const interval =
-      range === "minute"
-        ? 5000 // 5 seconds, ~1 minute total with 12 points
-        : range === "hour"
-        ? 60000 // 1 minute, 60 points = 1 hour
-        : range === "day"
-        ? 60 * 60 * 1000 // 1 hour, 24 points = 24 hours
-        : 24 * 60 * 60 * 1000; // 1 day for "week" and "month"
-    const count =
-      range === "minute"
-        ? 12
-        : range === "hour"
-        ? 60
-        : range === "day"
-        ? 24
-        : range === "week"
-        ? 7
-        : 30; // "month"
+    const intervalMap: Record<string, number> = {
+      minute: 5000,
+      hour: 60000,
+      day: 60 * 60 * 1000,
+      week: 24 * 60 * 60 * 1000,
+      month: 24 * 60 * 60 * 1000,
+    };
+    const countMap: Record<string, number> = {
+      minute: 12,
+      hour: 60,
+      day: 24,
+      week: 7,
+      month: 30,
+    };
+    const interval = intervalMap[range];
+    const count = countMap[range];
     return {
       range,
       metrics: Array.from({ length: count }, (_, i) => ({
@@ -120,28 +118,28 @@ export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week
       })),
     };
   }
-  
+
   const res = await fetch(`${API_BASE}/api/metrics/history?range=${range}`);
-  if (!res.ok) throw new Error("Failed to fetch metrics history");
+  if (!res.ok) throw new Error('Failed to fetch metrics history');
   return res.json();
 }
 
-
-/* 
-TODO: 
+/*
+TODO:
 - try calling the API endpoint and check what the return type looks like
 - make it dynamic in the frontend so if not installed it should say not installed
-- how should we store apps that are supported? JSON file? --> we can render supported apps from there
-- should update the JSON file created when installing to just have a list of the catalog apps similar to how page.tsx does in catalog
+- how should we store apps that are supported? JSON file?
+  --> we can render supported apps from there
+- should update the JSON file created when installing to just have a list
+  of the catalog apps similar to how page.tsx does in catalog
 */
 
-export async function getInstalledPackages(){
+export async function getInstalledPackages() {
   if (!API_BASE) return { };
   const res = await fetch(`${API_BASE}/api/services/packages`);
-  if (!res.ok) throw new Error("Failed to fetch installed packages");
+  if (!res.ok) throw new Error('Failed to fetch installed packages');
   return res.json();
 }
-
 
 // Add more API functions here as backend endpoints are ready:
 // getInstalledPackages(), startInstallation(), getInstallLogs(), etc.
