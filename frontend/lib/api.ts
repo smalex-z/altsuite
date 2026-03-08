@@ -19,42 +19,30 @@ export interface CatalogApp {
 
 // Fetch all catalog apps from the Go API
 export async function getCatalogApps(): Promise<CatalogApp[]> {
-  const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL ?? '') : '';
-  const res = await fetch(`${API_BASE}/api/packages`);
-  if (!res.ok) throw new Error('Failed to fetch catalog apps');
+  const res = await fetch("/api/packages");
+  if (!res.ok) throw new Error("Failed to fetch catalog apps");
   const data = await res.json();
   // If the response is { packages: CatalogApp[], count: number }, extract .packages
   if (Array.isArray(data)) return data;
   if (Array.isArray(data.packages)) return data.packages;
   return [];
 }
-/**
- * API client placeholder for AltSuite backend.
- * Replace these with real fetch/axios calls when the API is ready.
- * Base URL can be set via NEXT_PUBLIC_API_URL (e.g. http://localhost:8080).
- */
-
-const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL ?? '') : '';
-
 export async function getHealth(): Promise<{ status: string; timestamp: string }> {
-  if (!API_BASE) return { status: 'ok', timestamp: new Date().toISOString() };
-  const res = await fetch(`${API_BASE}/api/health`);
-  if (!res.ok) throw new Error('Health check failed');
+  const res = await fetch("/api/health");
+  if (!res.ok) throw new Error("Health check failed");
   return res.json();
 }
 
 export async function getServiceStatus(serviceName: string) {
-  if (!API_BASE) return { service_name: serviceName, is_running: true, output: '' };
-  const res = await fetch(`${API_BASE}/api/services/${serviceName}/status`);
-  if (!res.ok) throw new Error('Service status failed');
+  const res = await fetch(`/api/services/${serviceName}/status`);
+  if (!res.ok) throw new Error("Service status failed");
   return res.json();
 }
 
-export async function serviceAction(serviceName: string, action: 'start' | 'stop' | 'restart' | 'enable' | 'disable') {
-  if (!API_BASE) return { success: true };
-  const res = await fetch(`${API_BASE}/api/services/action`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+export async function serviceAction(serviceName: string, action: "start" | "stop" | "restart" | "enable" | "disable") {
+  const res = await fetch("/api/services/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ service_name: serviceName, action }),
   });
   if (!res.ok) throw new Error('Service action failed');
@@ -71,17 +59,8 @@ export interface SystemMetric {
 }
 
 export async function getCurrentMetrics(): Promise<SystemMetric> {
-  if (!API_BASE) {
-    return {
-      timestamp: new Date().toISOString(),
-      cpu: Math.random() * 50 + 20,
-      memory: Math.random() * 30 + 40,
-      network: Math.random() * 20 + 5,
-      disk: Math.random() * 20 + 30,
-    };
-  }
-  const res = await fetch(`${API_BASE}/api/metrics/current`);
-  if (!res.ok) throw new Error('Failed to fetch current metrics');
+  const res = await fetch("/api/metrics/current");
+  if (!res.ok) throw new Error("Failed to fetch current metrics");
   return res.json();
 }
 
@@ -89,38 +68,8 @@ export async function getMetricsHistory(range: 'minute' | 'hour' | 'day' | 'week
   range: string;
   metrics: Array<{ timestamp: string; cpu: number; memory: number; network: number }>;
 }> {
-  if (!API_BASE) {
-    // Return mock data
-    const now = Date.now();
-    const intervalMap: Record<string, number> = {
-      minute: 5000,
-      hour: 60000,
-      day: 60 * 60 * 1000,
-      week: 24 * 60 * 60 * 1000,
-      month: 24 * 60 * 60 * 1000,
-    };
-    const countMap: Record<string, number> = {
-      minute: 12,
-      hour: 60,
-      day: 24,
-      week: 7,
-      month: 30,
-    };
-    const interval = intervalMap[range];
-    const count = countMap[range];
-    return {
-      range,
-      metrics: Array.from({ length: count }, (_, i) => ({
-        timestamp: new Date(now - (count - i) * interval).toISOString(),
-        cpu: Math.random() * 30 + 20,
-        memory: Math.random() * 20 + 40,
-        network: Math.random() * 15 + 5,
-      })),
-    };
-  }
-
-  const res = await fetch(`${API_BASE}/api/metrics/history?range=${range}`);
-  if (!res.ok) throw new Error('Failed to fetch metrics history');
+  const res = await fetch(`/api/metrics/history?range=${range}`);
+  if (!res.ok) throw new Error("Failed to fetch metrics history");
   return res.json();
 }
 
@@ -134,10 +83,9 @@ TODO:
   of the catalog apps similar to how page.tsx does in catalog
 */
 
-export async function getInstalledPackages() {
-  if (!API_BASE) return { };
-  const res = await fetch(`${API_BASE}/api/services/packages`);
-  if (!res.ok) throw new Error('Failed to fetch installed packages');
+export async function getInstalledPackages(){
+  const res = await fetch("/api/services/packages");
+  if (!res.ok) throw new Error("Failed to fetch installed packages");
   return res.json();
 }
 
