@@ -35,7 +35,7 @@ const gitlabFields: WizardFieldConfig[] = [
     placeholder: 'registry.example.com',
     description: 'For offline installs, the address of your local container registry',
     required: false,
-  }
+  },
 ];
 
 type GitlabWizardProps = {

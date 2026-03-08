@@ -35,7 +35,7 @@ const appflowyFields: WizardFieldConfig[] = [
     placeholder: 'http://localhost',
     description: 'The URL of your AppFlowy Cloud instance',
     required: true,
-  }
+  },
 ];
 
 type AppflowyWizardProps = {

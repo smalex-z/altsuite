@@ -14,7 +14,7 @@ export default function WizardDemoPage() {
   */
 
   /*
-  Ideally the backend would return some kind of 
+  Ideally the backend would return some kind of
   */
 
   /*
@@ -27,7 +27,7 @@ export default function WizardDemoPage() {
     console.log('Wizard completed with data in page:', data);
     setSubmittedData(data);
     setShowWizard(false);
-    
+
     // In a real app, you would send this to your backend:
     // await fetch('/api/admin/services/rocketchat/configure', {
     //   method: 'POST',
@@ -38,8 +38,6 @@ export default function WizardDemoPage() {
     //   body: JSON.stringify(data),
     // });
   };
-
-  
 
   return (
     <div className="max-w-4xl mx-auto p-8">

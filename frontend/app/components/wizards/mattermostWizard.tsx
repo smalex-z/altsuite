@@ -41,7 +41,7 @@ const mattermostFields: WizardFieldConfig[] = [
     placeholder: '/path/to/mattermost.mate',
     description: 'If you have an Enterprise license, provide the local path',
     required: false,
-  }
+  },
 ];
 
 type MattermostWizardProps = {

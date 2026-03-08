@@ -6,8 +6,8 @@ import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 // Define the fields for RocketChat setup
 
 /*
-Nice to haves: 
-We can set up grafana for rocketChat in bash script ourselves but is non MVP atm 
+Nice to haves:
+We can set up grafana for rocketChat in bash script ourselves but is non MVP atm
 */
 const rocketChatFields: WizardFieldConfig[] = [
   {

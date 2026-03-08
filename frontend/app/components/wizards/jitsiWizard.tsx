@@ -14,7 +14,7 @@ const jitsiFields: WizardFieldConfig[] = [
   },
   {
     key: 'email',
-    label: "Admin Email (SSL)",
+    label: 'Admin Email (SSL)',
     type: 'email',
     placeholder: 'admin@example.com',
     description: "Email address used for Let's Encrypt SSL certificate registration",
@@ -50,7 +50,7 @@ const jitsiFields: WizardFieldConfig[] = [
       }
       return undefined;
     },
-  }
+  },
 ];
 
 type JitsiWizardProps = {

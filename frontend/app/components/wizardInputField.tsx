@@ -61,9 +61,9 @@ const WizardInputField: React.FC<WizardInputFieldProps> = ({
           transition-all duration-200
           text-gray-700
           focus:outline-none focus:ring-2 focus:ring-blue-500
-          ${error 
-            ? 'border-red-500' 
-            : 'border-gray-300 focus:border-blue-500'
+          ${error
+          ? 'border-red-500'
+          : 'border-gray-300 focus:border-blue-500'
           }
         `}
       />
@@ -73,7 +73,11 @@ const WizardInputField: React.FC<WizardInputFieldProps> = ({
       )}
 
       <p className="text-sm text-gray-500">
-        Press <kbd className="px-2 py-1 bg-gray-100 text-gray-700 rounded border border-gray-200">Enter ↵</kbd> to continue
+        Press
+        {' '}
+        <kbd className="px-2 py-1 bg-gray-100 text-gray-700 rounded border border-gray-200">Enter ↵</kbd>
+        {' '}
+        to continue
       </p>
     </div>
   );

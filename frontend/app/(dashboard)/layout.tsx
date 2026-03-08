@@ -7,9 +7,15 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Overview", end: true },
-  { href: "/installed", icon: Package, label: "Installed Apps", end: false },
-  { href: "/catalog", icon: ShoppingBag, label: "App Catalog", end: false },
+  {
+    href: '/', icon: LayoutDashboard, label: 'Overview', end: true,
+  },
+  {
+    href: '/installed', icon: Package, label: 'Installed Apps', end: false,
+  },
+  {
+    href: '/catalog', icon: ShoppingBag, label: 'App Catalog', end: false,
+  },
 ];
 
 export default function DashboardLayout({

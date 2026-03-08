@@ -29,7 +29,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
   // Initialize formData with all field keys as empty strings, then override with initialData
   const initializeFormData = () => {
     const emptyFields: Record<string, string> = {};
-    fields.forEach(field => {
+    fields.forEach((field) => {
       emptyFields[field.key] = '';
     });
     return { ...emptyFields, ...initialData };
@@ -46,7 +46,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
   // Helper function to ensure all fields are present with at least empty strings
   const ensureAllFieldsPresent = (data: Record<string, string>): Record<string, string> => {
     const completeData: Record<string, string> = {};
-    fields.forEach(field => {
+    fields.forEach((field) => {
       completeData[field.key] = data[field.key] || '';
     });
     return completeData;
@@ -95,15 +95,15 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
       setFormData({ ...formData, [currentField.key]: '' });
     }
 
-    if(fields[currentStep].required == false){
-      if(isLastStep){
+    if (fields[currentStep].required == false) {
+      if (isLastStep) {
         // Ensure all fields are present in final data
         const completeData = ensureAllFieldsPresent(formData);
         onComplete(completeData);
-        return
-      } else {
-        setCurrentStep(currentStep + 1);
+        return;
       }
+      setCurrentStep(currentStep + 1);
+
       return;
     }
 
@@ -159,14 +159,23 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {serviceName} setup wizard
+              {serviceName}
+              {' '}
+              setup wizard
             </h1>
             <p className="text-sm text-gray-600 mt-1">
-              Step {currentStep + 1} of {fields.length}
+              Step
+              {' '}
+              {currentStep + 1}
+              {' '}
+              of
+              {' '}
+              {fields.length}
             </p>
           </div>
           <div className="text-sm text-gray-500">
-            {Math.round(progress)}% Complete
+            {Math.round(progress)}
+            % Complete
           </div>
         </div>
       </div>
@@ -184,7 +193,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
             required={currentField.required}
             error={errors[currentField.key]}
             onEnter={handleNext}
-            autoFocus={true}
+            autoFocus
           />
         </div>
       </div>
@@ -198,8 +207,8 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
             className={`
               px-6 py-3 rounded-lg font-medium transition-all border
               ${currentStep === 0
-                ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-400'
-                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-400'
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
               }
             `}
           >
@@ -212,9 +221,9 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
                 key={index}
                 className={`
                   w-2 h-2 rounded-full transition-all
-                  ${index <= currentStep 
-                    ? 'bg-blue-600' 
-                    : 'bg-gray-300'
+                  ${index <= currentStep
+                  ? 'bg-blue-600'
+                  : 'bg-gray-300'
                   }
                   ${index === currentStep ? 'w-8' : ''}
                 `}
