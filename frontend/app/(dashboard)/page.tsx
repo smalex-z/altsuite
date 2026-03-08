@@ -9,46 +9,46 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { Cpu, HardDrive, Activity } from "lucide-react";
-import { getCurrentMetrics, getMetricsHistory } from "@/lib/api";
+} from 'recharts';
+import { Cpu, HardDrive, Activity } from 'lucide-react';
+import { getCurrentMetrics, getMetricsHistory } from '@/lib/api';
 
 interface SystemMetrics {
-  xAxisLabel: string;   // short label shown on x-axis
+  xAxisLabel: string; // short label shown on x-axis
   rawTimestamp: string; // ISO string used for tooltip display
   cpu: number;
   memory: number;
   network: number;
 }
 
-type TimeRange = "minute" | "hour" | "day" | "week" | "month";
+type TimeRange = 'minute' | 'hour' | 'day' | 'week' | 'month';
 
 // Downsample array to max N points by taking evenly spaced samples
 function downsampleToMax<T>(data: T[], maxPoints: number): T[] {
   if (data.length <= maxPoints) return data;
-  
+
   const step = data.length / maxPoints;
   const result: T[] = [];
-  
-  for (let i = 0; i < maxPoints; i++) {
+
+  for (let i = 0; i < maxPoints; i += 1) {
     const index = i === maxPoints - 1 ? data.length - 1 : Math.floor(i * step);
     result.push(data[index]);
   }
-  
+
   return result;
 }
 
 // Apply moving average smoothing
 function smoothData(data: SystemMetrics[], windowSize: number = 3): SystemMetrics[] {
   if (data.length < windowSize) return data;
-  
+
   const smoothed: SystemMetrics[] = [];
-  
-  for (let i = 0; i < data.length; i++) {
+
+  for (let i = 0; i < data.length; i += 1) {
     const start = Math.max(0, i - Math.floor(windowSize / 2));
     const end = Math.min(data.length, i + Math.ceil(windowSize / 2));
     const window = data.slice(start, end);
-    
+
     const avg = {
       xAxisLabel: data[i].xAxisLabel,
       rawTimestamp: data[i].rawTimestamp,
@@ -56,26 +56,26 @@ function smoothData(data: SystemMetrics[], windowSize: number = 3): SystemMetric
       memory: Math.max(0, window.reduce((sum, d) => sum + d.memory, 0) / window.length),
       network: Math.max(0, window.reduce((sum, d) => sum + d.network, 0) / window.length),
     };
-    
+
     smoothed.push(avg);
   }
-  
+
   return smoothed;
 }
 
 // Format number to max 4 significant figures
 function formatToSigFigs(value: number, sigFigs: number = 4): string {
-  if (value === 0) return "0";
-  
+  if (value === 0) return '0';
+
   const magnitude = Math.floor(Math.log10(Math.abs(value)));
   const decimals = Math.max(0, sigFigs - magnitude - 1);
-  
+
   return value.toFixed(Math.min(decimals, 4));
 }
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 // Format ISO timestamp as "March 5, 2026 at 13:58" for tooltip display
@@ -84,21 +84,21 @@ function formatTooltipLabel(rawTimestamp: string): string {
   const month = MONTHS[date.getMonth()];
   const day = date.getDate();
   const year = date.getFullYear();
-  const hours = date.getHours().toString().padStart(2, "0");
-  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
   return `${month} ${day}, ${year} at ${hours}:${minutes}`;
 }
 
 // Format x-axis label based on time range
 function formatXAxisLabel(date: Date, timeRange: TimeRange): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  if (timeRange === "minute") {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  if (timeRange === 'minute') {
     return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
-  if (timeRange === "hour") {
+  if (timeRange === 'hour') {
     return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
-  if (timeRange === "day") {
+  if (timeRange === 'day') {
     return `${date.getHours()}`;
   }
   // week or month: day of month
@@ -109,7 +109,7 @@ function formatXAxisLabel(date: Date, timeRange: TimeRange): string {
 function deduplicateXAxisLabels(data: SystemMetrics[]): SystemMetrics[] {
   return data.map((point, i) => {
     if (i > 0 && point.xAxisLabel === data[i - 1].xAxisLabel) {
-      return { ...point, xAxisLabel: "" };
+      return { ...point, xAxisLabel: '' };
     }
     return point;
   });
@@ -117,7 +117,7 @@ function deduplicateXAxisLabels(data: SystemMetrics[]): SystemMetrics[] {
 
 export default function OverviewPage() {
   const [metrics, setMetrics] = useState<SystemMetrics[]>([]);
-  const [timeRange, setTimeRange] = useState<TimeRange>("hour");
+  const [timeRange, setTimeRange] = useState<TimeRange>('hour');
 
   const [currentStats, setCurrentStats] = useState({
     cpu: 0,
@@ -144,8 +144,9 @@ export default function OverviewPage() {
         });
         setError(null);
       } catch (err) {
-        console.error("Failed to fetch current metrics:", err);
-        setError("Failed to fetch current metrics");
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch current metrics:', err);
+        setError('Failed to fetch current metrics');
       }
     };
 
@@ -180,15 +181,16 @@ export default function OverviewPage() {
         }
 
         // For day/week/month, only show the label once when the hour/day changes
-        if (timeRange === "day" || timeRange === "week" || timeRange === "month") {
+        if (timeRange === 'day' || timeRange === 'week' || timeRange === 'month') {
           formattedMetrics = deduplicateXAxisLabels(formattedMetrics);
         }
 
         setMetrics(formattedMetrics);
         setError(null);
       } catch (err) {
-        console.error("Failed to fetch historical metrics:", err);
-        setError("Failed to fetch historical metrics");
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch historical metrics:', err);
+        setError('Failed to fetch historical metrics');
       }
     };
 
@@ -199,19 +201,19 @@ export default function OverviewPage() {
     // excessive traffic for longer historical windows.
     let intervalMs: number;
     switch (timeRange) {
-      case "minute":
+      case 'minute':
         intervalMs = 5000; // 5 seconds
         break;
-      case "hour":
+      case 'hour':
         intervalMs = 15000; // 15 seconds
         break;
-      case "day":
+      case 'day':
         intervalMs = 60000; // 1 minute
         break;
-      case "week":
+      case 'week':
         intervalMs = 5 * 60 * 1000; // 5 minutes
         break;
-      case "month":
+      case 'month':
       default:
         intervalMs = 15 * 60 * 1000; // 15 minutes
         break;
@@ -222,10 +224,18 @@ export default function OverviewPage() {
   }, [timeRange]);
 
   const statCards = [
-    { label: "CPU Usage", value: `${currentStats.cpu.toFixed(1)}%`, icon: Cpu, color: "blue" },
-    { label: "Memory", value: `${currentStats.memory.toFixed(1)}%`, icon: HardDrive, color: "purple" },
-    { label: "Network", value: `${currentStats.network.toFixed(2)} MB/s`, icon: Activity, color: "green" },
-    { label: "Disk Usage", value: `${currentStats.disk.toFixed(1)}%`, icon: HardDrive, color: "orange" },
+    {
+      label: 'CPU Usage', value: `${currentStats.cpu.toFixed(1)}%`, icon: Cpu, color: 'blue',
+    },
+    {
+      label: 'Memory', value: `${currentStats.memory.toFixed(1)}%`, icon: HardDrive, color: 'purple',
+    },
+    {
+      label: 'Network', value: `${currentStats.network.toFixed(2)} MB/s`, icon: Activity, color: 'green',
+    },
+    {
+      label: 'Disk Usage', value: `${currentStats.disk.toFixed(1)}%`, icon: HardDrive, color: 'orange',
+    },
   ];
 
   const colorClasses: Record<string, string> = {
@@ -236,11 +246,11 @@ export default function OverviewPage() {
   };
 
   const timeRanges: { value: TimeRange; label: string }[] = [
-    { value: "minute", label: "Last Minute" },
-    { value: "hour", label: "Last Hour" },
-    { value: "day", label: "Last Day" },
-    { value: "week", label: "Last Week" },
-    { value: "month", label: "Last Month" },
+    { value: 'minute', label: 'Last Minute' },
+    { value: 'hour', label: 'Last Hour' },
+    { value: 'day', label: 'Last Day' },
+    { value: 'week', label: 'Last Week' },
+    { value: 'month', label: 'Last Month' },
   ];
 
   const installedApps = [
@@ -290,11 +300,12 @@ export default function OverviewPage() {
           {timeRanges.map((range) => (
             <button
               key={range.value}
+              type="button"
               onClick={() => setTimeRange(range.value)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 timeRange === range.value
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
               }`}
             >
               {range.label}
@@ -320,11 +331,9 @@ export default function OverviewPage() {
                   borderRadius: '0.5rem',
                 }}
                 formatter={(value: number) => formatToSigFigs(value)}
-                labelFormatter={(_label, payload) =>
-                  payload?.[0]?.payload?.rawTimestamp
-                    ? formatTooltipLabel(payload[0].payload.rawTimestamp)
-                    : _label
-                }
+                labelFormatter={(_label, payload) => (payload?.[0]?.payload?.rawTimestamp
+                  ? formatTooltipLabel(payload[0].payload.rawTimestamp)
+                  : _label)}
               />
               <Line
                 type="natural"
@@ -360,11 +369,9 @@ export default function OverviewPage() {
                   borderRadius: '0.5rem',
                 }}
                 formatter={(value: number) => formatToSigFigs(value)}
-                labelFormatter={(_label, payload) =>
-                  payload?.[0]?.payload?.rawTimestamp
-                    ? formatTooltipLabel(payload[0].payload.rawTimestamp)
-                    : _label
-                }
+                labelFormatter={(_label, payload) => (payload?.[0]?.payload?.rawTimestamp
+                  ? formatTooltipLabel(payload[0].payload.rawTimestamp)
+                  : _label)}
               />
               <Line
                 type="natural"

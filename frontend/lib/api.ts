@@ -81,35 +81,33 @@ export async function getCurrentMetrics(): Promise<SystemMetric> {
     };
   }
   const res = await fetch(`${API_BASE}/api/metrics/current`);
-  if (!res.ok) throw new Error("Failed to fetch current metrics");
+  if (!res.ok) throw new Error('Failed to fetch current metrics');
   return res.json();
 }
 
-export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week" | "month"): Promise<{
+export async function getMetricsHistory(range: 'minute' | 'hour' | 'day' | 'week' | 'month'): Promise<{
   range: string;
   metrics: Array<{ timestamp: string; cpu: number; memory: number; network: number }>;
 }> {
   if (!API_BASE) {
     // Return mock data
     const now = Date.now();
-    const interval =
-      range === "minute"
-        ? 5000 // 5 seconds, ~1 minute total with 12 points
-        : range === "hour"
-        ? 60000 // 1 minute, 60 points = 1 hour
-        : range === "day"
-        ? 60 * 60 * 1000 // 1 hour, 24 points = 24 hours
-        : 24 * 60 * 60 * 1000; // 1 day for "week" and "month"
-    const count =
-      range === "minute"
-        ? 12
-        : range === "hour"
-        ? 60
-        : range === "day"
-        ? 24
-        : range === "week"
-        ? 7
-        : 30; // "month"
+    const intervalMap: Record<string, number> = {
+      minute: 5000,
+      hour: 60000,
+      day: 60 * 60 * 1000,
+      week: 24 * 60 * 60 * 1000,
+      month: 24 * 60 * 60 * 1000,
+    };
+    const countMap: Record<string, number> = {
+      minute: 12,
+      hour: 60,
+      day: 24,
+      week: 7,
+      month: 30,
+    };
+    const interval = intervalMap[range];
+    const count = countMap[range];
     return {
       range,
       metrics: Array.from({ length: count }, (_, i) => ({
@@ -120,15 +118,14 @@ export async function getMetricsHistory(range: "minute" | "hour" | "day" | "week
       })),
     };
   }
-  
+
   const res = await fetch(`${API_BASE}/api/metrics/history?range=${range}`);
-  if (!res.ok) throw new Error("Failed to fetch metrics history");
+  if (!res.ok) throw new Error('Failed to fetch metrics history');
   return res.json();
 }
 
-
-/* 
-TODO: 
+/*
+TODO:
 - try calling the API endpoint and check what the return type looks like
 - make it dynamic in the frontend so if not installed it should say not installed
 - how should we store apps that are supported? JSON file?
