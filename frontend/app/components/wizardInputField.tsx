@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useId } from 'react';
 
 export type WizardInputFieldProps = {
   label: string;
@@ -15,7 +15,7 @@ export type WizardInputFieldProps = {
   autoFocus?: boolean;
 };
 
-const WizardInputField: React.FC<WizardInputFieldProps> = ({
+function WizardInputField({
   label,
   value,
   onChange,
@@ -26,7 +26,8 @@ const WizardInputField: React.FC<WizardInputFieldProps> = ({
   error,
   onEnter,
   autoFocus = true,
-}) => {
+}: WizardInputFieldProps) {
+  const inputId = useId();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && onEnter) {
       onEnter();
@@ -36,7 +37,7 @@ const WizardInputField: React.FC<WizardInputFieldProps> = ({
   return (
     <div className="flex flex-col space-y-4 w-full max-w-2xl">
       <div className="space-y-2">
-        <label className="text-3xl font-bold text-gray-900">
+        <label htmlFor={inputId} className="text-3xl font-bold text-gray-900">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -48,11 +49,13 @@ const WizardInputField: React.FC<WizardInputFieldProps> = ({
       </div>
 
       <input
+        id={inputId}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus={autoFocus}
         className={`
           w-full px-6 py-4 text-xl
@@ -81,6 +84,6 @@ const WizardInputField: React.FC<WizardInputFieldProps> = ({
       </p>
     </div>
   );
-};
+}
 
 export default WizardInputField;

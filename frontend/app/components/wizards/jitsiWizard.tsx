@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 const jitsiFields: WizardFieldConfig[] = [
@@ -57,7 +56,7 @@ type JitsiWizardProps = {
   onComplete?: (data: Record<string, string>) => void;
 };
 
-const JitsiWizard: React.FC<JitsiWizardProps> = ({ onComplete }) => {
+function JitsiWizard({ onComplete }: JitsiWizardProps) {
   const handleComplete = async (data: Record<string, string>) => {
     console.log('Jitsi setup completed with data:', data);
     if (onComplete) {
@@ -72,6 +71,6 @@ const JitsiWizard: React.FC<JitsiWizardProps> = ({ onComplete }) => {
       serviceName="Jitsi Meet"
     />
   );
-};
+}
 
 export default JitsiWizard;

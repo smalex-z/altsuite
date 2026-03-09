@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Package, ShoppingBag, Server, Wrench,
+  LayoutDashboard, Package, ShoppingBag, Server,
 } from 'lucide-react';
 
 const navItems = [
