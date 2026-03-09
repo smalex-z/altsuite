@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 const gitlabFields: WizardFieldConfig[] = [
@@ -42,7 +41,7 @@ type GitlabWizardProps = {
   onComplete?: (data: Record<string, string>) => void;
 };
 
-const GitlabWizard: React.FC<GitlabWizardProps> = ({ onComplete }) => {
+function GitlabWizard({ onComplete }: GitlabWizardProps) {
   const handleComplete = async (data: Record<string, string>) => {
     console.log('GitLab setup completed with data:', data);
     if (onComplete) {
@@ -57,6 +56,6 @@ const GitlabWizard: React.FC<GitlabWizardProps> = ({ onComplete }) => {
       serviceName="GitLab"
     />
   );
-};
+}
 
 export default GitlabWizard;

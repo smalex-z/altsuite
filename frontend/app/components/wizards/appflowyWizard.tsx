@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 const appflowyFields: WizardFieldConfig[] = [
@@ -42,7 +41,7 @@ type AppflowyWizardProps = {
   onComplete?: (data: Record<string, string>) => void;
 };
 
-const AppflowyWizard: React.FC<AppflowyWizardProps> = ({ onComplete }) => {
+function AppflowyWizard({ onComplete }: AppflowyWizardProps) {
   const handleComplete = async (data: Record<string, string>) => {
     console.log('AppFlowy setup completed with data:', data);
     if (onComplete) {
@@ -57,6 +56,6 @@ const AppflowyWizard: React.FC<AppflowyWizardProps> = ({ onComplete }) => {
       serviceName="AppFlowy"
     />
   );
-};
+}
 
 export default AppflowyWizard;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import WizardInputField from './wizardInputField';
 
 export type WizardFieldConfig = {
@@ -20,12 +20,12 @@ export type ServiceWizardProps = {
   initialData?: Record<string, string>;
 };
 
-const ServiceWizard: React.FC<ServiceWizardProps> = ({
+function ServiceWizard({
   fields,
   onComplete,
   serviceName = 'Service',
   initialData = {},
-}) => {
+}: ServiceWizardProps) {
   // Initialize formData with all field keys as empty strings, then override with initialData
   const initializeFormData = () => {
     const emptyFields: Record<string, string> = {};
@@ -73,15 +73,18 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
           break;
         case 'url':
           try {
+            // eslint-disable-next-line no-new
             new URL(value);
           } catch {
             return 'Please enter a valid URL';
           }
           break;
         case 'number':
-          if (isNaN(Number(value))) {
+          if (Number.isNaN(Number(value))) {
             return 'Please enter a valid number';
           }
+          break;
+        default:
           break;
       }
     }
@@ -95,7 +98,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
       setFormData({ ...formData, [currentField.key]: '' });
     }
 
-    if (fields[currentStep].required == false) {
+    if (fields[currentStep].required === false) {
       if (isLastStep) {
         // Ensure all fields are present in final data
         const completeData = ensureAllFieldsPresent(formData);
@@ -202,6 +205,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
       <div className="px-8 py-6 border-t border-gray-200 bg-white">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
+            type="button"
             onClick={handlePrevious}
             disabled={currentStep === 0}
             className={`
@@ -216,9 +220,9 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
           </button>
 
           <div className="flex space-x-2">
-            {fields.map((_, index) => (
+            {fields.map((field, index) => (
               <div
-                key={index}
+                key={field.key}
                 className={`
                   w-2 h-2 rounded-full transition-all
                   ${index <= currentStep
@@ -232,6 +236,7 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={handleNext}
             className="
               px-6 py-3 rounded-lg font-medium
@@ -247,6 +252,6 @@ const ServiceWizard: React.FC<ServiceWizardProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default ServiceWizard;

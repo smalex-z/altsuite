@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 const mattermostFields: WizardFieldConfig[] = [
@@ -48,7 +47,7 @@ type MattermostWizardProps = {
   onComplete?: (data: Record<string, string>) => void;
 };
 
-const MattermostWizard: React.FC<MattermostWizardProps> = ({ onComplete }) => {
+function MattermostWizard({ onComplete }: MattermostWizardProps) {
   const handleComplete = async (data: Record<string, string>) => {
     console.log('Mattermost setup completed with data:', data);
     if (onComplete) {
@@ -63,6 +62,6 @@ const MattermostWizard: React.FC<MattermostWizardProps> = ({ onComplete }) => {
       serviceName="Mattermost"
     />
   );
-};
+}
 
 export default MattermostWizard;

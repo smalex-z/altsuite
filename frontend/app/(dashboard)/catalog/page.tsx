@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, Shield, Check } from 'lucide-react';
+import { Download, Check } from 'lucide-react';
 import { getCatalogApps, CatalogApp } from '@/lib/api';
 import { redirect } from 'next/navigation';
 
@@ -20,7 +20,6 @@ export default function CatalogPage() {
       }
     }
     fetchApps();
-    console.log('Fetched apps:', apps);
   }, []);
 
   // Unique categories for filter buttons
@@ -31,10 +30,9 @@ export default function CatalogPage() {
 
   // Route to proper installer/wizard page based on appID
   function handleInstall(id: string) {
-    for (const app of apps) {
-      if (app.id === id) {
-        redirect(`/wizards/${app.name}.Install`);
-      }
+    const app = apps.find((a) => a.id === id);
+    if (app) {
+      redirect(`/wizards/${app.name}.Install`);
     }
   }
 

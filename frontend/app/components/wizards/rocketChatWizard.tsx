@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 // Define the fields for RocketChat setup
@@ -54,7 +53,7 @@ type RocketChatWizardProps = {
   onComplete?: (data: Record<string, string>) => void;
 };
 
-const RocketChatWizard: React.FC<RocketChatWizardProps> = ({ onComplete }) => {
+function RocketChatWizard({ onComplete }: RocketChatWizardProps) {
   const handleComplete = async (data: Record<string, string>) => {
     console.log('RocketChat setup completed with data:', data);
     // Call parent callback if provided
@@ -69,6 +68,6 @@ const RocketChatWizard: React.FC<RocketChatWizardProps> = ({ onComplete }) => {
       serviceName="RocketChat"
     />
   );
-};
+}
 
 export default RocketChatWizard;
