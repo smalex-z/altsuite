@@ -17,9 +17,11 @@ export interface CatalogApp {
   };
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 // Fetch all catalog apps from the Go API
 export async function getCatalogApps(): Promise<CatalogApp[]> {
-  const res = await fetch('/api/packages');
+  const res = await fetch(`${API_BASE_URL}/api/packages`);
   if (!res.ok) throw new Error('Failed to fetch catalog apps');
   const data = await res.json();
   // If the response is { packages: CatalogApp[], count: number }, extract .packages
@@ -28,19 +30,19 @@ export async function getCatalogApps(): Promise<CatalogApp[]> {
   return [];
 }
 export async function getHealth(): Promise<{ status: string; timestamp: string }> {
-  const res = await fetch('/api/health');
+  const res = await fetch(`${API_BASE_URL}/api/health`);
   if (!res.ok) throw new Error('Health check failed');
   return res.json();
 }
 
 export async function getServiceStatus(serviceName: string) {
-  const res = await fetch(`/api/services/${serviceName}/status`);
+  const res = await fetch(`${API_BASE_URL}/api/services/${serviceName}/status`);
   if (!res.ok) throw new Error('Service status failed');
   return res.json();
 }
 
 export async function serviceAction(serviceName: string, action: 'start' | 'stop' | 'restart' | 'enable' | 'disable') {
-  const res = await fetch('/api/services/action', {
+  const res = await fetch(`${API_BASE_URL}/api/services/action`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ service_name: serviceName, action }),
@@ -59,7 +61,7 @@ export interface SystemMetric {
 }
 
 export async function getCurrentMetrics(): Promise<SystemMetric> {
-  const res = await fetch('/api/metrics/current');
+  const res = await fetch(`${API_BASE_URL}/api/metrics/current`);
   if (!res.ok) throw new Error('Failed to fetch current metrics');
   return res.json();
 }
@@ -68,7 +70,7 @@ export async function getMetricsHistory(range: 'minute' | 'hour' | 'day' | 'week
   range: string;
   metrics: Array<{ timestamp: string; cpu: number; memory: number; network: number }>;
 }> {
-  const res = await fetch(`/api/metrics/history?range=${range}`);
+  const res = await fetch(`${API_BASE_URL}/api/metrics/history?range=${range}`);
   if (!res.ok) throw new Error('Failed to fetch metrics history');
   return res.json();
 }
@@ -84,7 +86,7 @@ TODO:
 */
 
 export async function getInstalledPackages() {
-  const res = await fetch('/api/services/packages');
+  const res = await fetch(`${API_BASE_URL}/api/services/packages`);
   if (!res.ok) throw new Error('Failed to fetch installed packages');
   return res.json();
 }

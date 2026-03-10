@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Download, Check } from 'lucide-react';
 import { getCatalogApps, CatalogApp } from '@/lib/api';
+import { redirect } from 'next/navigation';
 
 export default function CatalogPage() {
-  const router = useRouter();
   const [apps, setApps] = useState<CatalogApp[]>([]);
   const [filter, setFilter] = useState<string>('all');
 
@@ -29,8 +28,12 @@ export default function CatalogPage() {
   // Filtered apps based on selected filter
   const filteredApps = filter === 'all' ? apps : apps.filter((app) => app.category === filter);
 
+  // Route to proper installer/wizard page based on appID
   function handleInstall(id: string) {
-    router.push(`/install?app=${id}`);
+    const app = apps.find((a) => a.id === id);
+    if (app) {
+      redirect(`/wizards/${app.name}.Install`);
+    }
   }
 
   return (
