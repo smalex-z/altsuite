@@ -72,6 +72,14 @@ if [ "$MODE" = "altsuite" ]; then
     cp -f "$PROJECT_ROOT/api/supported_apps.json" "$INSTALL_DIR/supported_apps.json"
     chown "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/supported_apps.json"
 
+    echo "Deploying service scripts..."
+    mkdir -p "$INSTALL_DIR/deploy/services"
+    cp -f "$SCRIPT_DIR/install.sh" "$INSTALL_DIR/deploy/install.sh"
+    chmod +x "$INSTALL_DIR/deploy/install.sh"
+    cp -f "$SCRIPT_DIR/services/"*.sh "$INSTALL_DIR/deploy/services/"
+    chmod +x "$INSTALL_DIR/deploy/services/"*.sh
+    chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/deploy"
+
     if [ -d "$PROJECT_ROOT/frontend/out" ]; then
         echo "Deploying frontend..."
         rm -rf "$INSTALL_DIR/frontend/*"
@@ -206,8 +214,8 @@ EOF
             caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
             ;;
         outline)
-            "$SCRIPT_DIR/services/outline-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
-            caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
+            "$SCRIPT_DIR/services/outline-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG" "${3:-}" "${4:-}" "${5:-}"
+            caddy_add_site "$DOMAIN_ARG" "localhost:8890" "$SERVICE_NAME"
             ;;
         *)
             echo "Unknown service: $SERVICE_NAME"

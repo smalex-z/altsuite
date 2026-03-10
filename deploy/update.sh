@@ -22,6 +22,14 @@ chown altsuite:altsuite "$INSTALL_DIR/bin/altsuite"
 cp "$PROJECT_ROOT/api/supported_apps.json" "$INSTALL_DIR/supported_apps.json"
 chown altsuite:altsuite "$INSTALL_DIR/supported_apps.json"
 
+echo "Deploying service scripts..."
+mkdir -p "$INSTALL_DIR/deploy/services"
+cp -f "$SCRIPT_DIR/install.sh" "$INSTALL_DIR/deploy/install.sh"
+chmod +x "$INSTALL_DIR/deploy/install.sh"
+cp -f "$SCRIPT_DIR/services/"*.sh "$INSTALL_DIR/deploy/services/"
+chmod +x "$INSTALL_DIR/deploy/services/"*.sh
+chown -R altsuite:altsuite "$INSTALL_DIR/deploy"
+
 if [ -d "$PROJECT_ROOT/frontend/out" ]; then
     echo "Deploying frontend..."
     rm -rf "$INSTALL_DIR/frontend/"*

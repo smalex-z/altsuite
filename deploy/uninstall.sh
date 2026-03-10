@@ -16,23 +16,42 @@ if [ $# -eq 1 ]; then
 fi
 
 # ============================================
-# SERVICE UNINSTALLATION
+# SHARED HELPERS
 # ============================================
 
-if [ "$MODE" = "service" ]; then
-    SERVICE_NAME="$SERVICE_NAME_ARG"
-    SERVICE_DIR="/etc/altsuite/$SERVICE_NAME"
+# Remove Caddy reverse-proxy config for a service and reload Caddy.
+caddy_remove_site() {
+    local service="$1"
+    local conf_file="/etc/caddy/conf.d/${service}.caddy"
+    if [ -f "$conf_file" ]; then
+        echo "Removing Caddy config $conf_file..."
+        rm -f "$conf_file"
+        if systemctl is-active --quiet caddy 2>/dev/null; then
+            systemctl reload caddy || true
+            echo "Caddy reloaded."
+        fi
+    else
+        echo "Caddy config $conf_file not found — skipping."
+    fi
+}
 
-    echo "Uninstall Service: $SERVICE_NAME"
-    echo "========================================"
+# Stop containers, optionally destroy volumes, remove service directory and Caddy config.
+# Usage: uninstall_service <service_name> <remove_volumes: y|n>
+uninstall_service() {
+    local SERVICE_NAME="$1"
+    local REMOVE_VOLUMES="$2"   # "y" to destroy volumes, anything else to keep them
+    local SERVICE_DIR="/etc/altsuite/$SERVICE_NAME"
+
+    echo "Uninstalling service: $SERVICE_NAME"
+    echo "----------------------------------------"
 
     if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
-        echo "Stopping $SERVICE_NAME..."
+        echo "Stopping systemd unit $SERVICE_NAME..."
         systemctl stop "$SERVICE_NAME" || true
     fi
 
     if systemctl is-enabled --quiet "$SERVICE_NAME" 2>/dev/null; then
-        echo "Disabling $SERVICE_NAME..."
+        echo "Disabling systemd unit $SERVICE_NAME..."
         systemctl disable "$SERVICE_NAME" || true
     fi
 
@@ -42,9 +61,8 @@ if [ "$MODE" = "service" ]; then
                 echo "Stopping Mattermost containers..."
                 cd "$SERVICE_DIR"
                 docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml down || true
-                read -p "Remove all Mattermost data/volumes? (y/N): " -n 1 -r
-                echo
-                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                if [[ "$REMOVE_VOLUMES" =~ ^[Yy]$ ]]; then
+                    docker compose -f docker-compose.yml -f docker-compose.without-nginx.yml down -v || true
                     rm -rf "$SERVICE_DIR/volumes"
                 fi
                 ;;
@@ -52,22 +70,48 @@ if [ "$MODE" = "service" ]; then
                 echo "Stopping Outline containers..."
                 cd "$SERVICE_DIR"
                 docker compose down || true
-                read -p "Remove all Outline data/volumes? (y/N): " -n 1 -r
-                echo
-                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                if [[ "$REMOVE_VOLUMES" =~ ^[Yy]$ ]]; then
                     docker compose down -v || true
+                fi
+                ;;
+            *)
+                # Generic: stop docker compose if a compose file exists
+                if [ -f "$SERVICE_DIR/docker-compose.yml" ] || [ -f "$SERVICE_DIR/docker-compose.yaml" ]; then
+                    echo "Stopping $SERVICE_NAME containers..."
+                    cd "$SERVICE_DIR"
+                    docker compose down || true
+                    if [[ "$REMOVE_VOLUMES" =~ ^[Yy]$ ]]; then
+                        docker compose down -v || true
+                    fi
                 fi
                 ;;
         esac
         echo "Removing service directory $SERVICE_DIR..."
         rm -rf "$SERVICE_DIR"
     else
-        echo "Service directory $SERVICE_DIR not found."
+        echo "Service directory $SERVICE_DIR not found — skipping."
     fi
 
-    echo ""
-    echo "========================================"
+    caddy_remove_site "$SERVICE_NAME"
+
     echo "Service $SERVICE_NAME removed."
+    echo ""
+}
+
+# ============================================
+# SERVICE UNINSTALLATION
+# ============================================
+
+if [ "$MODE" = "service" ]; then
+    echo "Uninstall Service: $SERVICE_NAME_ARG"
+    echo "========================================"
+
+    read -p "Remove all $SERVICE_NAME_ARG data/volumes? (y/N): " -n 1 -r
+    echo
+    uninstall_service "$SERVICE_NAME_ARG" "$REPLY"
+
+    echo "========================================"
+    echo "Service $SERVICE_NAME_ARG removed."
     echo "========================================"
 fi
 
@@ -81,14 +125,32 @@ if [ "$MODE" = "altsuite" ]; then
 
     INSTALL_USER="altsuite"
     INSTALL_DIR="/opt/altsuite"
-    SERVICE_NAME="altsuite"
 
-    echo "Stopping and disabling service..."
-    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
-    systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+    # Uninstall all installed services first
+    SERVICES_BASE="/etc/altsuite"
+    installed_services=()
+    if [ -d "$SERVICES_BASE" ]; then
+        for svc_dir in "$SERVICES_BASE"/*/; do
+            svc="$(basename "$svc_dir")"
+            installed_services+=("$svc")
+        done
+    fi
+
+    if [ ${#installed_services[@]} -gt 0 ]; then
+        echo "The following services will also be removed: ${installed_services[*]}"
+        read -p "Remove all service data/volumes? (y/N): " -n 1 -r REMOVE_VOLUMES
+        echo
+        for svc in "${installed_services[@]}"; do
+            uninstall_service "$svc" "$REMOVE_VOLUMES"
+        done
+    fi
+
+    echo "Stopping and disabling AltSuite service..."
+    systemctl stop "altsuite" 2>/dev/null || true
+    systemctl disable "altsuite" 2>/dev/null || true
 
     echo "Removing systemd service..."
-    rm -f /etc/systemd/system/${SERVICE_NAME}.service
+    rm -f /etc/systemd/system/altsuite.service
     systemctl daemon-reload
 
     echo "Removing sudoers configuration..."

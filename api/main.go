@@ -108,6 +108,7 @@ func main() {
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
 	api.HandleFunc("/services/action", serviceActionHandler).Methods("POST")
+	api.HandleFunc("/services/install", installServiceHandler).Methods("POST")
 
 	// Package management endpoints
 	api.HandleFunc("/packages", listPackagesHandler).Methods("GET")
@@ -284,6 +285,38 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// installServiceHandler installs a named service via the deploy/install.sh script.
+func installServiceHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Service string            `json:"service"`
+		Domain  string            `json:"domain"`
+		Config  map[string]string `json:"config"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Service == "" || req.Domain == "" {
+		http.Error(w, "service and domain are required", http.StatusBadRequest)
+		return
+	}
+	if req.Config == nil {
+		req.Config = map[string]string{}
+	}
+
+	output, err := privOps.InstallService(req.Service, req.Domain, req.Config)
+	response := map[string]interface{}{"output": output}
+	if err != nil {
+		response["error"] = err.Error()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
