@@ -19,22 +19,22 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24'
       - name: Run unit tests and generate coverage
         run: |
           cd api
-          go test -v -coverprofile=coverage.out ./... | tee test_output.txt
+          go test -v -race -coverprofile=coverage.out -coverpkg=./... ./... | tee test_output.txt
           go tool cover -func=coverage.out > coverage.txt
           go tool cover -html=coverage.out -o coverage.html
       - name: Parse test results and comment
         if: always()
         run: |
-          TESTS_PASSED=$(grep -c -- '--- PASS:' api/test_output.txt)
-          TESTS_TOTAL=$(grep -c -- '=== RUN' api/test_output.txt)
-          COVERAGE=$(grep 'coverage:' api/test_output.txt | tail -1 | grep -oP '\d+\.\d+%')
+          TESTS_PASSED=$(grep -c -- '--- PASS:' api/test_output.txt || echo 0)
+          TESTS_TOTAL=$(grep -c -- '=== RUN' api/test_output.txt || echo 0)
+          COVERAGE=$(grep '^total:' api/coverage.txt | awk '{print $3}')
           echo "Unit tests run: $TESTS_TOTAL" > test_summary.txt
           echo "Unit tests passed: $TESTS_PASSED" >> test_summary.txt
-          echo "Test coverage: $COVERAGE" >> test_summary.txt
+          echo "Test coverage: ${COVERAGE:-0.0%}" >> test_summary.txt
       - name: Upload coverage report (PR only)
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
