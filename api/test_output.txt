@@ -1,0 +1,16 @@
+=== RUN   TestHealthHandler
+--- PASS: TestHealthHandler (0.00s)
+=== RUN   TestCORSHeaders
+--- PASS: TestCORSHeaders (0.00s)
+PASS
+coverage: 2.7% of statements in ./...
+ok  	github.com/smalex/altsuite	0.225s	coverage: 2.7% of statements in ./...
+=== RUN   TestDownsampleIncludesDisk
+--- PASS: TestDownsampleIncludesDisk (0.00s)
+=== RUN   TestDownsampleMultipleBucketsPreservesDisk
+--- PASS: TestDownsampleMultipleBucketsPreservesDisk (0.00s)
+PASS
+coverage: 6.0% of statements in ./...
+ok  	github.com/smalex/altsuite/collectors	0.382s	coverage: 6.0% of statements in ./...
+	github.com/smalex/altsuite/controllers		coverage: 0.0% of statements
+	github.com/smalex/altsuite/routes		coverage: 0.0% of statements
