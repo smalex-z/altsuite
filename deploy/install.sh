@@ -62,10 +62,15 @@ if [ "$MODE" = "altsuite" ]; then
         exit 1
     fi
 
+    echo "Stopping service (if running)..."
+    systemctl stop altsuite 2>/dev/null || true
+
     echo "Deploying binary..."
     cp -f "$PROJECT_ROOT/api/altsuite" "$INSTALL_DIR/bin/altsuite"
     chmod +x "$INSTALL_DIR/bin/altsuite"
     chown "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/bin/altsuite"
+    cp -f "$PROJECT_ROOT/api/supported_apps.json" "$INSTALL_DIR/supported_apps.json"
+    chown "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/supported_apps.json"
 
     if [ -d "$PROJECT_ROOT/frontend/out" ]; then
         echo "Deploying frontend..."
@@ -78,7 +83,56 @@ if [ "$MODE" = "altsuite" ]; then
     cp "$SCRIPT_DIR/altsuite.service" /etc/systemd/system/altsuite.service
     systemctl daemon-reload
     systemctl enable altsuite
-    systemctl start altsuite
+    systemctl restart altsuite
+
+    # Install Caddy
+    echo "Installing Caddy..."
+    if ! command -v caddy &>/dev/null; then
+        apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+            | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+            | tee /etc/apt/sources.list.d/caddy-stable.list
+        apt-get update
+        apt-get install -y caddy
+        echo "Caddy installed."
+    else
+        echo "Caddy already installed."
+    fi
+
+    # Configure Caddy with an import-based layout
+    mkdir -p /etc/caddy/conf.d
+    cat > /etc/caddy/Caddyfile <<'EOF'
+# AltSuite managed Caddyfile
+# Global options (uncomment and set email to enable HTTPS):
+# {
+#     email you@example.com
+# }
+
+import /etc/caddy/conf.d/*.caddy
+EOF
+
+    # Drop a template for the dashboard — activate by renaming once a domain is set
+    cat > /etc/caddy/conf.d/dashboard.caddy.example <<'EOF'
+# AltSuite Dashboard
+# Rename this file to dashboard.caddy and replace YOUR_DOMAIN:
+#
+# dashboard.YOUR_DOMAIN {
+#     # Proxy API requests to the AltSuite backend
+#     handle /api/* {
+#         reverse_proxy localhost:8080
+#     }
+#     # Serve the static frontend
+#     handle {
+#         root * /opt/altsuite/frontend
+#         file_server
+#     }
+# }
+EOF
+
+    systemctl enable caddy
+    systemctl start caddy
+    echo "Caddy installed and running."
 
     echo ""
     echo "========================================"
@@ -107,21 +161,53 @@ if [ "$MODE" = "service" ]; then
     mkdir -p "$SERVICE_DIR"
     chown altsuite:altsuite "$SERVICE_DIR"
 
+    # Add a reverse-proxy block to Caddy for the given service and reload.
+    # Usage: caddy_add_site <full-domain> <upstream> <service-name>
+    caddy_add_site() {
+        local domain="$1"
+        local upstream="$2"
+        local service="$3"
+        local conf_file="/etc/caddy/conf.d/${service}.caddy"
+
+        if [ -z "$domain" ]; then
+            echo "Caddy: no domain provided for $service — skipping Caddy config."
+            return
+        fi
+        if [ -f "$conf_file" ]; then
+            echo "Caddy: config for $service already exists at $conf_file — skipping."
+            return
+        fi
+
+        mkdir -p /etc/caddy/conf.d
+        cat > "$conf_file" <<EOF
+${domain} {
+    reverse_proxy ${upstream}
+}
+EOF
+        echo "Caddy: added ${domain} -> ${upstream}"
+        systemctl reload caddy
+    }
+
     case "$SERVICE_NAME" in
         mattermost)
             "$SCRIPT_DIR/services/mattermost-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            caddy_add_site "$DOMAIN_ARG" "localhost:8065" "$SERVICE_NAME"
             ;;
         penpot)
             "$SCRIPT_DIR/services/penpot-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            caddy_add_site "$DOMAIN_ARG" "localhost:9001" "$SERVICE_NAME"
             ;;
         gitea)
             "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
             ;;
         caldotcom)
             "$SCRIPT_DIR/services/caldotcom-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
             ;;
         outline)
             "$SCRIPT_DIR/services/outline-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
             ;;
         *)
             echo "Unknown service: $SERVICE_NAME"

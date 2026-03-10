@@ -19,6 +19,8 @@ echo "Deploying binary..."
 cp "$PROJECT_ROOT/api/altsuite" "$INSTALL_DIR/bin/altsuite"
 chmod +x "$INSTALL_DIR/bin/altsuite"
 chown altsuite:altsuite "$INSTALL_DIR/bin/altsuite"
+cp "$PROJECT_ROOT/api/supported_apps.json" "$INSTALL_DIR/supported_apps.json"
+chown altsuite:altsuite "$INSTALL_DIR/supported_apps.json"
 
 if [ -d "$PROJECT_ROOT/frontend/out" ]; then
     echo "Deploying frontend..."

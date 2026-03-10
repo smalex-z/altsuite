@@ -39,6 +39,48 @@ type PackageListResponse struct {
 
 const shutdownTimeout = 5 * time.Second
 
+// spaFileServer serves a Next.js static export where pages are written as
+// <route>.html rather than <route>/index.html. For each request it tries
+// the path as-is, then appends ".html", then falls back to index.html.
+func spaFileServer(dir string) http.Handler {
+	fs := http.Dir(dir)
+	plain := http.FileServer(fs)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upath := r.URL.Path
+
+		// Try the path as-is (covers root, _next/*, static assets, etc.)
+		if f, err := fs.Open(upath); err == nil {
+			info, statErr := f.Stat()
+			f.Close()
+			if statErr == nil {
+				if !info.IsDir() {
+					plain.ServeHTTP(w, r)
+					return
+				}
+				// Directory exists — check for an index.html inside it.
+				if idx, err2 := fs.Open(upath + "/index.html"); err2 == nil {
+					idx.Close()
+					plain.ServeHTTP(w, r)
+					return
+				}
+				// Dir has no index.html — fall through to try the .html sibling.
+			}
+		}
+
+		// Try <path>.html (the Next.js static export pattern).
+		if f, err := fs.Open(upath + ".html"); err == nil {
+			f.Close()
+			r.URL.Path = upath + ".html"
+			plain.ServeHTTP(w, r)
+			return
+		}
+
+		// Fallback: serve index.html for any unmatched route.
+		r.URL.Path = "/index.html"
+		plain.ServeHTTP(w, r)
+	})
+}
+
 var privOps *PrivilegedOps
 
 func main() {
@@ -77,7 +119,7 @@ func main() {
 
 	// Serve frontend static files
 	frontendDir := "/opt/altsuite/frontend"
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(frontendDir)))
+	r.PathPrefix("/").Handler(spaFileServer(frontendDir))
 
 	// CORS middleware for development
 	r.Use(corsMiddleware)
