@@ -5,11 +5,6 @@ import (
 	"log"
 	"math"
 	"time"
-
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/disk"
-	"github.com/shirou/gopsutil/v4/mem"
-	"github.com/shirou/gopsutil/v4/net"
 )
 
 const (
@@ -20,16 +15,24 @@ const (
 
 // MetricsCollector gathers system metrics on a timer and stores them.
 type MetricsCollector struct {
-	Store         *MetricsStore
-	prevNetBytes  uint64
-	prevNetTime   time.Time
-	hasBaseline   bool
+	Store        *MetricsStore
+	reader       SystemReader
+	prevNetBytes uint64
+	prevNetTime  time.Time
+	hasBaseline  bool
 }
 
-// NewMetricsCollector creates a collector with its own store.
+// NewMetricsCollector creates a collector using the real system reader.
 func NewMetricsCollector() *MetricsCollector {
+	return NewMetricsCollectorWithReader(newGopsutilReader())
+}
+
+// NewMetricsCollectorWithReader creates a collector with a custom SystemReader.
+// This is primarily used in tests to inject a mock reader.
+func NewMetricsCollectorWithReader(r SystemReader) *MetricsCollector {
 	return &MetricsCollector{
-		Store: NewMetricsStore(MaxStoreSize),
+		Store:  NewMetricsStore(MaxStoreSize),
+		reader: r,
 	}
 }
 
@@ -70,32 +73,29 @@ func (c *MetricsCollector) collectOnce() {
 }
 
 func (c *MetricsCollector) collectCPU() float64 {
-	percentages, err := cpu.Percent(0, false)
-	if err != nil || len(percentages) == 0 {
+	pct, err := c.reader.CPUPercent()
+	if err != nil {
 		log.Printf("cpu collect error: %v", err)
 		return 0
 	}
-	return percentages[0]
+	return pct
 }
 
 func (c *MetricsCollector) collectMemory() float64 {
-	v, err := mem.VirtualMemory()
+	pct, err := c.reader.MemoryPercent()
 	if err != nil {
 		log.Printf("memory collect error: %v", err)
 		return 0
 	}
-	return v.UsedPercent
+	return pct
 }
 
 func (c *MetricsCollector) collectNetwork(now time.Time) float64 {
-	counters, err := net.IOCounters(false)
-	if err != nil || len(counters) == 0 {
+	totalBytes, err := c.reader.NetworkBytes()
+	if err != nil {
 		log.Printf("network collect error: %v", err)
 		return 0
 	}
-
-	totalBytes := counters[0].BytesSent + counters[0].BytesRecv
-
 	if !c.hasBaseline {
 		c.prevNetBytes = totalBytes
 		c.prevNetTime = now
@@ -125,12 +125,12 @@ func (c *MetricsCollector) collectNetwork(now time.Time) float64 {
 }
 
 func (c *MetricsCollector) collectDisk() float64 {
-	usage, err := disk.Usage("/")
+	pct, err := c.reader.DiskPercent("/")
 	if err != nil {
 		log.Printf("disk collect error: %v", err)
 		return 0
 	}
-	return usage.UsedPercent
+	return pct
 }
 
 func round2(f float64) float64 {

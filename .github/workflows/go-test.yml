@@ -19,11 +19,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24'
       - name: Run unit tests and generate coverage
         run: |
           cd api
-          go test -v -coverprofile=coverage.out -coverpkg=./... ./... | tee test_output.txt
+          go test -v -race -coverprofile=coverage.out -coverpkg=./... ./... | tee test_output.txt
           go tool cover -func=coverage.out > coverage.txt
           go tool cover -html=coverage.out -o coverage.html
       - name: Parse test results and comment
