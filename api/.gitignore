@@ -14,3 +14,6 @@ api
 vendor/
 
 go.work
+
+coverage.txt
+test_output.txt
