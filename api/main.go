@@ -32,6 +32,10 @@ type ServiceActionRequest struct {
 	Action      string `json:"action"` // start, stop, restart, enable, disable
 }
 
+type SetupConfigureRequest struct {
+	Domain string `json:"domain"`
+}
+
 type PackageListResponse struct {
 	Packages []SupportedApp `json:"packages"`
 	Count    int            `json:"count"`
@@ -118,6 +122,10 @@ func main() {
 	// Docker endpoints (if Docker is installed)
 	api.HandleFunc("/docker/containers", listDockerContainersHandler).Methods("GET")
 
+	// First-time setup endpoints
+	api.HandleFunc("/setup/status", setupStatusHandler).Methods("GET")
+	api.HandleFunc("/setup/configure", setupConfigureHandler).Methods("POST")
+
 	// Serve frontend static files
 	frontendDir := "/opt/altsuite/frontend"
 	r.PathPrefix("/").Handler(spaFileServer(frontendDir))
@@ -164,6 +172,28 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func setupStatusHandler(w http.ResponseWriter, r *http.Request) {
+	status := privOps.GetSetupStatus()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+func setupConfigureHandler(w http.ResponseWriter, r *http.Request) {
+	var req SetupConfigureRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	output, err := privOps.ConfigureDashboard(req.Domain)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error(), "output": output})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"output": output, "domain": req.Domain})
 }
 
 // Handler for service status

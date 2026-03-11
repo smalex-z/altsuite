@@ -11,6 +11,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -185,6 +186,51 @@ func (p *PrivilegedOps) InstallService(serviceName, domain string, config map[st
 		return string(output), fmt.Errorf("service install failed: %w\n%s", err, string(output))
 	}
 	return string(output), nil
+}
+
+// ========================= Dashboard Setup =========================
+
+// SetupStatus reports whether the dashboard domain has been configured.
+type SetupStatus struct {
+	Configured bool   `json:"configured"`
+	Domain     string `json:"domain,omitempty"`
+}
+
+// GetSetupStatus checks whether /etc/caddy/conf.d/dashboard.caddy exists and
+// returns the configured domain if it does.
+func (p *PrivilegedOps) GetSetupStatus() SetupStatus {
+	const confFile = "/etc/caddy/conf.d/dashboard.caddy"
+	content, err := os.ReadFile(confFile)
+	if err != nil {
+		return SetupStatus{Configured: false}
+	}
+	// The first non-blank, non-comment line is `<domain> {` — extract the domain.
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			return SetupStatus{Configured: true, Domain: fields[0]}
+		}
+		break
+	}
+	return SetupStatus{Configured: true}
+}
+
+// ConfigureDashboard writes the Caddy reverse-proxy config for the dashboard
+// domain and reloads Caddy.
+func (p *PrivilegedOps) ConfigureDashboard(domain string) (string, error) {
+	if !p.validDomain.MatchString(domain) {
+		return "", errors.New("invalid domain: must be a valid hostname or FQDN")
+	}
+	cmd := exec.Command("sudo", "/opt/altsuite/deploy/configure-dashboard.sh", domain)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("configure dashboard failed: %w\n%s", err, string(out))
+	}
+	return string(out), nil
 }
 
 // ========================= Docker Operations =========================

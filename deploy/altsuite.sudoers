@@ -22,4 +22,5 @@ altsuite ALL=(ALL) NOPASSWD: /usr/bin/docker-compose
 
 # Service installation scripts
 altsuite ALL=(ALL) NOPASSWD: /opt/altsuite/deploy/install.sh *
+altsuite ALL=(ALL) NOPASSWD: /opt/altsuite/deploy/configure-dashboard.sh *
 altsuite ALL=(ALL) NOPASSWD: /usr/bin/docker compose *

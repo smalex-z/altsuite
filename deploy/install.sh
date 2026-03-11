@@ -76,6 +76,8 @@ if [ "$MODE" = "altsuite" ]; then
     mkdir -p "$INSTALL_DIR/deploy/services"
     cp -f "$SCRIPT_DIR/install.sh" "$INSTALL_DIR/deploy/install.sh"
     chmod +x "$INSTALL_DIR/deploy/install.sh"
+    cp -f "$SCRIPT_DIR/configure-dashboard.sh" "$INSTALL_DIR/deploy/configure-dashboard.sh"
+    chmod +x "$INSTALL_DIR/deploy/configure-dashboard.sh"
     cp -f "$SCRIPT_DIR/services/"*.sh "$INSTALL_DIR/deploy/services/"
     chmod +x "$INSTALL_DIR/deploy/services/"*.sh
     chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/deploy"
