@@ -91,5 +91,20 @@ export async function getInstalledPackages() {
   return res.json();
 }
 
+export async function installService(
+  service: string,
+  domain: string,
+  config: Record<string, string> = {},
+): Promise<{ output: string; error?: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/services/install`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ service, domain, config }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Installation failed');
+  return data;
+}
+
 // Add more API functions here as backend endpoints are ready:
 // getInstalledPackages(), startInstallation(), getInstallLogs(), etc.

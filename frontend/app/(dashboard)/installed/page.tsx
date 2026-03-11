@@ -54,7 +54,7 @@ const MOCK_APPS: AppData[] = [
   },
   {
     id: '3',
-    name: 'AppFlowy',
+    name: 'Outline',
     status: 'running',
     version: '0.4.5',
     replaces: 'Notion Business',
@@ -63,7 +63,7 @@ const MOCK_APPS: AppData[] = [
     uptime: '8d 3h',
     memoryUsage: '1.2 GB',
     cpuUsage: '8%',
-    appUrl: 'https://appflowy.example.com',
+    appUrl: 'https://Outline.example.com',
   },
   {
     id: '4',

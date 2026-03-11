@@ -256,7 +256,7 @@ export default function OverviewPage() {
   const installedApps = [
     { name: 'Mattermost', status: 'running', users: 42 },
     { name: 'GitLab', status: 'running', users: 28 },
-    { name: 'AppFlowy', status: 'running', users: 15 },
+    { name: 'Outline', status: 'running', users: 15 },
     { name: 'Jitsi Meet', status: 'running', users: 8 },
   ];
 

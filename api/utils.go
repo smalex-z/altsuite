@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-var supportedAppsFilePath = "./supported_apps.json"
+var supportedAppsFilePath = "/opt/altsuite/supported_apps.json"
 
 type Spec struct {
 	CPU     string `json:"cpu"`
