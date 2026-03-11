@@ -106,5 +106,29 @@ export async function installService(
   return data;
 }
 
+export interface SetupStatus {
+  configured: boolean;
+  domain?: string;
+}
+
+export async function getSetupStatus(): Promise<SetupStatus> {
+  const res = await fetch(`${API_BASE_URL}/api/setup/status`);
+  if (!res.ok) throw new Error('Failed to fetch setup status');
+  return res.json();
+}
+
+export async function configureDashboard(
+  domain: string,
+): Promise<{ output: string; domain: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/setup/configure`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ domain }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Configuration failed');
+  return data;
+}
+
 // Add more API functions here as backend endpoints are ready:
 // getInstalledPackages(), startInstallation(), getInstallLogs(), etc.
