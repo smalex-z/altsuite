@@ -5,6 +5,8 @@
 # Then set DATABASE_URL when starting AltSuite:
 #   DATABASE_URL=postgres://altsuite:your-secure-password@127.0.0.1:5432/altsuite?sslmode=disable
 
+name: altsuite-postgres
+
 services:
   postgres:
     image: postgres:16-alpine

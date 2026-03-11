@@ -131,6 +131,8 @@ if [ "$MODE" = "altsuite" ]; then
     installed_services=()
     if [ -d "$SERVICES_BASE" ]; then
         for svc_dir in "$SERVICES_BASE"/*/; do
+            # Skip if glob didn't expand (no subdirectories exist)
+            [ -d "$svc_dir" ] || continue
             svc="$(basename "$svc_dir")"
             installed_services+=("$svc")
         done
@@ -161,7 +163,11 @@ if [ "$MODE" = "altsuite" ]; then
 
     if [ -f "$INSTALL_DIR/postgres/docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo "Stopping user management Postgres..."
-        (cd "$INSTALL_DIR/postgres" && docker compose down) || true
+        if ! (cd "$INSTALL_DIR/postgres" && docker compose down); then
+            echo "WARNING: docker compose down failed. Attempting direct container stop..."
+            docker stop altsuite-postgres-postgres-1 2>/dev/null || true
+            docker rm altsuite-postgres-postgres-1 2>/dev/null || true
+        fi
     fi
 
     echo "Removing installation directory..."
