@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Package, ShoppingBag, Server,
+  LayoutDashboard, Package, ShoppingBag, Server, Users,
 } from 'lucide-react';
 import { getSetupStatus } from '@/lib/api';
 
@@ -17,6 +17,9 @@ const navItems = [
   },
   {
     href: '/catalog', icon: ShoppingBag, label: 'App Catalog', end: false,
+  },
+  {
+    href: '/users', icon: Users, label: 'Users', end: false,
   },
 ];
 

@@ -156,6 +156,14 @@ if [ "$MODE" = "altsuite" ]; then
     echo "Removing sudoers configuration..."
     rm -f /etc/sudoers.d/altsuite
 
+    echo "Removing dashboard Caddy config..."
+    caddy_remove_site "dashboard"
+
+    if [ -f "$INSTALL_DIR/postgres/docker-compose.yml" ] && command -v docker &>/dev/null; then
+        echo "Stopping user management Postgres..."
+        (cd "$INSTALL_DIR/postgres" && docker compose down) || true
+    fi
+
     echo "Removing installation directory..."
     rm -rf "$INSTALL_DIR"
 

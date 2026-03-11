@@ -130,5 +130,40 @@ export async function configureDashboard(
   return data;
 }
 
-// Add more API functions here as backend endpoints are ready:
-// getInstalledPackages(), startInstallation(), getInstallLogs(), etc.
+// --- User management ---
+
+export interface User {
+  id: number;
+  username: string;
+  created_at: string;
+}
+
+export async function getUsers(): Promise<{ users: User[] }> {
+  const res = await fetch(`${API_BASE_URL}/api/users`);
+  if (res.status === 503) throw new Error('User management not configured (set DATABASE_URL)');
+  if (!res.ok) throw new Error('Failed to fetch users');
+  return res.json();
+}
+
+export async function createUser(username: string, password: string): Promise<User> {
+  const res = await fetch(`${API_BASE_URL}/api/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const text = await res.text();
+  if (res.status === 409) throw new Error(text || 'Username already exists');
+  if (!res.ok) throw new Error(text || 'Failed to create user');
+  return JSON.parse(text) as User;
+}
+
+export async function changePassword(userId: number, password: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/users/${userId}/password`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  if (res.status === 404) throw new Error('User not found');
+  if (res.status === 503) throw new Error('User management not configured');
+  if (!res.ok) throw new Error('Failed to change password');
+}

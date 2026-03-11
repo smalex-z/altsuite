@@ -95,6 +95,35 @@ if [ "$MODE" = "altsuite" ]; then
     systemctl enable altsuite
     systemctl restart altsuite
 
+    # Optional: set up user management (Postgres + DATABASE_URL) so the Users tab works out of the box
+    if [ ! -f "$INSTALL_DIR/env" ] && command -v docker &>/dev/null; then
+        echo "Setting up user management (Postgres)..."
+        mkdir -p "$INSTALL_DIR/postgres"
+        cp -f "$SCRIPT_DIR/altsuite-postgres/docker-compose.yml" "$INSTALL_DIR/postgres/"
+        POSTGRES_PASSWORD=$(openssl rand -hex 16)
+        echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > "$INSTALL_DIR/postgres/.env"
+        chmod 600 "$INSTALL_DIR/postgres/.env"
+        printf "DATABASE_URL=postgres://altsuite:%s@127.0.0.1:5432/altsuite?sslmode=disable\n" "$POSTGRES_PASSWORD" > "$INSTALL_DIR/env"
+        chmod 600 "$INSTALL_DIR/env"
+        chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/postgres" "$INSTALL_DIR/env"
+        (cd "$INSTALL_DIR/postgres" && docker compose up -d)
+        echo "Waiting for Postgres to be ready..."
+        for _ in $(seq 1 60); do
+            status=$(docker inspect altsuite-postgres-postgres-1 --format='{{.State.Health.Status}}' 2>/dev/null)
+            if [ "$status" = "healthy" ]; then
+                break
+            fi
+            sleep 1
+        done
+        if [ "$(docker inspect altsuite-postgres-postgres-1 --format='{{.State.Health.Status}}' 2>/dev/null)" != "healthy" ]; then
+            echo "WARNING: Postgres did not become healthy in time. User management may not work."
+        fi
+        systemctl restart altsuite
+        echo "User management enabled (Users tab in the dashboard)."
+    elif [ ! -f "$INSTALL_DIR/env" ]; then
+        echo "Skipping user management (Docker not found). To enable later: run deploy/altsuite-postgres, create $INSTALL_DIR/env with DATABASE_URL=..., then systemctl restart altsuite."
+    fi
+
     # Install Caddy
     echo "Installing Caddy..."
     if ! command -v caddy &>/dev/null; then
