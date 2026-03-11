@@ -4,41 +4,41 @@ import ServiceWizard, { WizardFieldConfig } from '../serviceWizard';
 
 const mattermostFields: WizardFieldConfig[] = [
   {
-    key: 'siteUrl',
-    label: 'What is the Site URL for your Mattermost instance?',
-    type: 'url',
-    placeholder: 'https://mattermost.example.com',
-    description: 'The URL users will use to access Mattermost. Required for email links and SSO.',
+    key: 'domain',
+    label: 'What domain will Mattermost be served on?',
+    type: 'text',
+    placeholder: 'chat.example.com',
+    description: 'The public hostname users will use to access Mattermost (no http:// prefix). Caddy will be configured automatically.',
     required: true,
     validate: (value: string) => {
-      if (!value.startsWith('http://') && !value.startsWith('https://')) {
-        return 'Site URL must start with http:// or https://';
+      if (value.startsWith('http://') || value.startsWith('https://')) {
+        return 'Enter just the hostname, not a full URL (e.g. chat.example.com)';
+      }
+      if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(value)) {
+        return 'Please enter a valid hostname (e.g. chat.example.com)';
       }
       return undefined;
     },
   },
   {
     key: 'postgresPassword',
-    label: 'Set a password for the Mattermost Database',
+    label: 'Database Password',
     type: 'password',
-    placeholder: 'Minimum 10 characters',
-    description: 'Password for the "mmuser" in the PostgreSQL container',
+    placeholder: 'Choose a strong password',
+    description: 'Password for the Mattermost PostgreSQL database (mmuser). Use letters, numbers, and - _ . @ characters only.',
     required: true,
+    validate: (value: string) => {
+      if (value.length < 8) return 'Password must be at least 8 characters';
+      if (!/^[a-zA-Z0-9_.@-]+$/.test(value)) return 'Only letters, numbers, and - _ . @ characters are allowed';
+      return undefined;
+    },
   },
   {
-    key: 'mattermostImageTag',
-    label: 'Mattermost Release Version',
-    type: 'text',
-    placeholder: '9.5.0',
-    description: 'The Docker image tag/version you wish to deploy',
-    required: false,
-  },
-  {
-    key: 'licensePath',
-    label: 'Path to License File (Optional)',
-    type: 'text',
-    placeholder: '/path/to/mattermost.mate',
-    description: 'If you have an Enterprise license, provide the local path',
+    key: 'supportEmail',
+    label: 'Support Email (Optional)',
+    type: 'email',
+    placeholder: 'support@example.com',
+    description: 'The email address users will contact when they need help. Shown in Mattermost\'s help menu.',
     required: false,
   },
 ];
@@ -49,7 +49,6 @@ type MattermostWizardProps = {
 
 function MattermostWizard({ onComplete }: MattermostWizardProps) {
   const handleComplete = async (data: Record<string, string>) => {
-    console.log('Mattermost setup completed with data:', data);
     if (onComplete) {
       onComplete(data);
     }

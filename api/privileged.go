@@ -35,7 +35,8 @@ var allowedServices = map[string]bool{
 
 // serviceConfigKeys defines the ordered extra positional args each service script accepts beyond domain.
 var serviceConfigKeys = map[string][]string{
-	"outline": {"googleClientId", "googleClientSecret", "postgresPassword"},
+	"mattermost": {"postgresPassword", "supportEmail"},
+	"outline":    {"googleClientId", "googleClientSecret", "postgresPassword"},
 }
 
 // validConfigValue permits characters found in OAuth tokens and similar config values.

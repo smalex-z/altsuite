@@ -198,7 +198,7 @@ EOF
 
     case "$SERVICE_NAME" in
         mattermost)
-            "$SCRIPT_DIR/services/mattermost-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            "$SCRIPT_DIR/services/mattermost-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG" "${3:-}" "${4:-}"
             caddy_add_site "$DOMAIN_ARG" "localhost:8065" "$SERVICE_NAME"
             ;;
         penpot)
