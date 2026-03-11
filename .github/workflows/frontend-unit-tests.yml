@@ -44,10 +44,21 @@ jobs:
             COV=$(grep -oP 'All files.*?\K[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1 || echo "0.0")
             COVERAGE="${COV}%"
           fi
-          echo "Unit tests run: ${TOTAL:-0}" > test_summary.txt
-          echo "Unit tests passed: ${PASSED:-0}" >> test_summary.txt
-          echo "Unit tests failed: ${FAILED:-0}" >> test_summary.txt
-          echo "Test coverage: ${COVERAGE:-0.0%}" >> test_summary.txt
+
+          SUITES_LINE=$(grep '^Test Suites:' test_output.txt | tail -1 || echo 'Test Suites: 0 total')
+          TESTS_LINE=$(grep '^Tests:' test_output.txt | tail -1 || echo 'Tests: 0 total')
+          SNAPSHOTS_LINE=$(grep '^Snapshots:' test_output.txt | tail -1 || echo 'Snapshots: 0 total')
+          TIME_LINE=$(grep '^Time:' test_output.txt | tail -1 || echo 'Time: 0.0 s')
+
+          echo "Unit tests run: ${TOTAL:-0}" > summary.txt
+          echo "Unit tests passed: ${PASSED:-0}" >> summary.txt
+          echo "Unit tests failed: ${FAILED:-0}" >> summary.txt
+          echo "Test coverage: ${COVERAGE:-0.0%}" >> summary.txt
+          echo "" >> summary.txt
+          echo "${SUITES_LINE}" >> summary.txt
+          echo "${TESTS_LINE}" >> summary.txt
+          echo "${SNAPSHOTS_LINE}" >> summary.txt
+          echo "${TIME_LINE}" >> summary.txt
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -55,11 +66,11 @@ jobs:
           name: coverage-report
           path: |
             frontend/coverage
-            frontend/test_summary.txt
+            frontend/test_output.txt
 
       - name: Comment test summary (PR only)
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
-          path: frontend/test_output.txt
+          path: frontend/summary.txt
