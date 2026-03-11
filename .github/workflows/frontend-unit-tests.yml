@@ -22,7 +22,8 @@ jobs:
 
       - name: Install dependencies and run tests
         working-directory: frontend
-        run: npm ci
+        run: |
+          npm install
           npm test -- --coverage
 
       - name: Upload coverage artifact
