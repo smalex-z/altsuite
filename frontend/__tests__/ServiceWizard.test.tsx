@@ -5,14 +5,18 @@ import userEvent from '@testing-library/user-event';
 import ServiceWizard, { WizardFieldConfig } from '../app/components/serviceWizard';
 
 // Mock the WizardInputField to keep tests focused on ServiceWizard behavior
-jest.mock('../app/components/wizardInputField', () => {
-  return {
-    __esModule: true,
-    default: ({ label, value, onChange, onEnter, error, placeholder }) => (
+jest.mock('../app/components/wizardInputField', () => ({
+  __esModule: true,
+  default: ({
+    label, value, onChange, onEnter, error, placeholder,
+  }) => {
+    const inputId = label?.replace(/[^a-zA-Z0-9]/g, '-');
+    return (
       <div>
-        <label>
+        <label htmlFor={inputId}>
           {label}
           <input
+            id={inputId}
             aria-label={label}
             value={value || ''}
             placeholder={placeholder}
@@ -24,9 +28,9 @@ jest.mock('../app/components/wizardInputField', () => {
         </label>
         {error && <div role="alert">{error}</div>}
       </div>
-    ),
-  };
-});
+    );
+  },
+}));
 
 describe('ServiceWizard', () => {
   afterEach(() => {
@@ -37,26 +41,24 @@ describe('ServiceWizard', () => {
     const user = userEvent.setup();
     const onComplete = jest.fn();
 
-    
-   const fields: WizardFieldConfig[] = [
-     {
-       key: 'publicUrl',
-       label: 'Jitsi Public URL',
-       type: 'url',
-       placeholder: 'https://meet.example.com',
-       description: 'The full URL of your Jitsi Meet instance',
-       required: true,
-     },
-     {
-       key: 'email',
-       label: 'Admin Email (SSL)',
-       type: 'email',
-       placeholder: 'admin@example.com',
-       description: "Email address used for Let's Encrypt SSL certificate registration",
-       required: true,
-     },
-   ];
-   
+    const fields: WizardFieldConfig[] = [
+      {
+        key: 'publicUrl',
+        label: 'Jitsi Public URL',
+        type: 'url',
+        placeholder: 'https://meet.example.com',
+        description: 'The full URL of your Jitsi Meet instance',
+        required: true,
+      },
+      {
+        key: 'email',
+        label: 'Admin Email (SSL)',
+        type: 'email',
+        placeholder: 'admin@example.com',
+        description: "Email address used for Let's Encrypt SSL certificate registration",
+        required: true,
+      },
+    ];
 
     render(<ServiceWizard fields={fields} onComplete={onComplete} serviceName="TestService" />);
 

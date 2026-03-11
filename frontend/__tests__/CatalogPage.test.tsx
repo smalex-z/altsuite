@@ -3,6 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
+import { redirect } from 'next/navigation';
+import CatalogPage from '../app/(dashboard)/catalog/page';
+import { getCatalogApps } from '../lib/api';
+
 // Mock API and next/navigation
 jest.mock('../lib/api', () => ({
   getCatalogApps: jest.fn(),
@@ -10,10 +14,6 @@ jest.mock('../lib/api', () => ({
 jest.mock('next/navigation', () => ({
   redirect: jest.fn(),
 }));
-
-import CatalogPage from '../app/(dashboard)/catalog/page';
-import { getCatalogApps, CatalogApp } from '../lib/api';
-import { redirect } from 'next/navigation';
 
 describe('CatalogPage', () => {
   afterEach(() => {
