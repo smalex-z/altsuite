@@ -100,6 +100,10 @@ if [ "$MODE" = "altsuite" ]; then
         echo "Setting up user management (Postgres)..."
         mkdir -p "$INSTALL_DIR/postgres"
         cp -f "$SCRIPT_DIR/altsuite-postgres/docker-compose.yml" "$INSTALL_DIR/postgres/"
+        # Tear down any stale container+volume so postgres reinitializes with the new password
+        if [ -f "$INSTALL_DIR/postgres/docker-compose.yml" ]; then
+            (cd "$INSTALL_DIR/postgres" && docker compose down -v 2>/dev/null) || true
+        fi
         POSTGRES_PASSWORD=$(openssl rand -hex 16)
         echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > "$INSTALL_DIR/postgres/.env"
         chmod 600 "$INSTALL_DIR/postgres/.env"
