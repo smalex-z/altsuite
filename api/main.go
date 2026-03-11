@@ -3,15 +3,18 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/smalex/altsuite/collectors"
+	"github.com/smalex/altsuite/db"
 	"github.com/smalex/altsuite/routes"
 )
 
@@ -86,10 +89,23 @@ func spaFileServer(dir string) http.Handler {
 }
 
 var privOps *PrivilegedOps
+var userDB *db.DB
 
 func main() {
 	// Initialize privileged operations handler
 	privOps = NewPrivilegedOps()
+
+	// Connect to Postgres for user management if configured
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		var err error
+		userDB, err = db.Open(url)
+		if err != nil {
+			log.Printf("User DB: could not connect (user management disabled): %v", err)
+		} else {
+			defer userDB.Close()
+			log.Println("User DB: connected")
+		}
+	}
 
 	// Create a cancellable context for the metrics collector; it will be
 	// cancelled during graceful shutdown so the background goroutine exits.
@@ -108,6 +124,11 @@ func main() {
 
 	// System metrics endpoints
 	routes.RegisterMetricsRoutes(api, metricsCollector)
+
+	// User management endpoints (when DATABASE_URL is set)
+	api.HandleFunc("/users", listUsersHandler).Methods("GET")
+	api.HandleFunc("/users", createUserHandler).Methods("POST")
+	api.HandleFunc("/users/{id}/password", changePasswordHandler).Methods("PUT")
 
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
@@ -362,6 +383,78 @@ func listDockerContainersHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(output))
+}
+
+// --- User management ---
+
+func listUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, "user management not configured (set DATABASE_URL)", http.StatusServiceUnavailable)
+		return
+	}
+	users, err := userDB.ListUsers()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"users": users})
+}
+
+func createUserHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, "user management not configured (set DATABASE_URL)", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	u, err := userDB.CreateUser(req.Username, req.Password)
+	if err != nil {
+		if errors.Is(err, db.ErrDuplicateUsername) {
+			http.Error(w, "username already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(u)
+}
+
+func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, "user management not configured (set DATABASE_URL)", http.StatusServiceUnavailable)
+		return
+	}
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := userDB.UpdatePassword(id, req.Password); err != nil {
+		if err.Error() == "user not found" {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

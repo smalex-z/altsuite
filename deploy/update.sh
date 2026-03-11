@@ -37,6 +37,12 @@ if [ -d "$PROJECT_ROOT/frontend/out" ]; then
     chown -R altsuite:altsuite "$INSTALL_DIR/frontend"
 fi
 
+# Ensure user-management Postgres is running if it was set up at install time
+if [ -f "$INSTALL_DIR/postgres/docker-compose.yml" ] && command -v docker &>/dev/null; then
+    echo "Ensuring user management Postgres is running..."
+    (cd "$INSTALL_DIR/postgres" && docker compose up -d) || true
+fi
+
 systemctl start altsuite
 
 echo ""
