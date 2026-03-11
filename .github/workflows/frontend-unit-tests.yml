@@ -73,4 +73,4 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
-          path: frontend/summary.txt
+          path: frontend/test_output.txt
