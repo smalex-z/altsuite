@@ -14,7 +14,7 @@ const outlineFields: WizardFieldConfig[] = [
       if (value.startsWith('http://') || value.startsWith('https://')) {
         return 'Enter just the hostname, not a full URL (e.g. wiki.example.com)';
       }
-      if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/.test(value)) {
+      if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(value)) {
         return 'Please enter a valid hostname (e.g. wiki.example.com)';
       }
       return undefined;

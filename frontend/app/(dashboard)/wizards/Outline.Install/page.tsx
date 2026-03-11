@@ -54,8 +54,14 @@ export default function OutlineWizardPage() {
             </div>
           </div>
           <p className="text-sm text-gray-500">
-            Caddy has been configured to proxy <strong>{domain}</strong> → Outline.
-            Google Sign-In is enabled — visit <strong>https://{domain}</strong> to complete setup.
+            {'Caddy has been configured to proxy '}
+            <strong>{domain}</strong>
+            {' → Outline. Google Sign-In is enabled — visit '}
+            <strong>
+              https://
+              {domain}
+            </strong>
+            {' to complete setup.'}
           </p>
         </div>
       </div>
