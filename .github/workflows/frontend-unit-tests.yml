@@ -62,4 +62,4 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
-          path: frontend/test_summary.txt
+          path: frontend/test_output.txt
