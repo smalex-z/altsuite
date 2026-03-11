@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-import { redirect } from 'next/navigation';
 import CatalogPage from '../app/(dashboard)/catalog/page';
 import { getCatalogApps } from '../lib/api';
 
@@ -66,8 +65,9 @@ describe('CatalogPage', () => {
     expect(screen.queryByText('AppTwo')).not.toBeInTheDocument();
 
     // Click install button for AppOne -> should call redirect
-    const installBtn = screen.getByRole('button', { name: /Ready to Install/i });
+    const installBtn = screen.getByRole('button', { name: 'Ready to Install' });
     await userEvent.click(installBtn);
-    expect(redirect).toHaveBeenCalledWith('/wizards/AppOne.Install');
+    const nav = jest.requireMock('next/navigation');
+    expect(nav.redirect).toHaveBeenCalledWith('/wizards/AppOne.Install');
   });
 });
