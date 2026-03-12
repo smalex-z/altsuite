@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"strings"
 )
 
 var supportedAppsFilePath = "/opt/altsuite/supported_apps.json"
@@ -42,7 +43,7 @@ func LoadSupportedApps() ([]SupportedApp, error) {
 
 // Save supported apps to JSON
 func SaveSupportedApps(apps []SupportedApp) error {
-	file, err := os.Open(supportedAppsFilePath)
+	file, err := os.OpenFile(supportedAppsFilePath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -70,6 +71,22 @@ func SetInstalledState(appName string, installed bool) error {
 		return &AppNotSupportedError{AppName: appName}
 	}
 	return SaveSupportedApps(apps)
+}
+
+// SetInstalledStateByServiceName updates the installed state for a supported app by service name (case-insensitive).
+// Used after service install; if the service is not in supported_apps.json, no error is returned.
+func SetInstalledStateByServiceName(serviceName string, installed bool) error {
+	apps, err := LoadSupportedApps()
+	if err != nil {
+		return err
+	}
+	for i, app := range apps {
+		if strings.EqualFold(app.Name, serviceName) {
+			apps[i].Installed = installed
+			return SaveSupportedApps(apps)
+		}
+	}
+	return nil
 }
 
 // AppNotSupportedError is returned if an app is not in supported_apps.json

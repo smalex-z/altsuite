@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Cpu, HardDrive, Activity } from 'lucide-react';
-import { getCurrentMetrics, getMetricsHistory } from '@/lib/api';
+import { getCurrentMetrics, getMetricsHistory, getCatalogApps } from '@/lib/api';
 
 interface SystemMetrics {
   xAxisLabel: string; // short label shown on x-axis
@@ -127,6 +127,26 @@ export default function OverviewPage() {
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [installedApps, setInstalledApps] = useState<
+    { name: string; status: string; users?: number }[]
+  >([]);
+
+  // Fetch installed apps for Overview
+  useEffect(() => {
+    getCatalogApps()
+      .then((data) => {
+        const installed = data.filter((app) => app.installed).map((app) => ({
+          name: app.name,
+          status: 'running',
+          users: undefined,
+        }));
+        setInstalledApps(installed);
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch installed apps for overview:', err);
+      });
+  }, []);
 
   // Determine whether to show dots based on data point count
   const showDots = metrics.length <= 20;
@@ -251,13 +271,6 @@ export default function OverviewPage() {
     { value: 'day', label: 'Last Day' },
     { value: 'week', label: 'Last Week' },
     { value: 'month', label: 'Last Month' },
-  ];
-
-  const installedApps = [
-    { name: 'Mattermost', status: 'running', users: 42 },
-    { name: 'GitLab', status: 'running', users: 28 },
-    { name: 'Outline', status: 'running', users: 15 },
-    { name: 'Jitsi Meet', status: 'running', users: 8 },
   ];
 
   return (
@@ -402,9 +415,7 @@ export default function OverviewPage() {
                 </span>
               </div>
               <p className="text-sm text-gray-600">
-                {app.users}
-                {' '}
-                active users
+                {app.users != null ? `${app.users} active users` : 'Installed'}
               </p>
             </div>
           ))}

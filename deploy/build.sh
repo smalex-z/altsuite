@@ -46,6 +46,8 @@ echo ""
 chmod +x "$SCRIPT_DIR/install.sh" \
     "$SCRIPT_DIR/uninstall.sh" \
     "$SCRIPT_DIR/update.sh" \
+    "$SCRIPT_DIR/rm-service-dir.sh" \
+    "$SCRIPT_DIR/read-caddy-config.sh" \
     "$SCRIPT_DIR/services/mattermost-install.sh" \
     "$SCRIPT_DIR/services/penpot-install.sh" \
     "$SCRIPT_DIR/services/gitea-install.sh" \
