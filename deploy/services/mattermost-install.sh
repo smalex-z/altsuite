@@ -28,6 +28,9 @@ sed -i "s/^DOMAIN=.*/DOMAIN=$DOMAIN_ARG/" .env
 # Pin to a stable release tag
 sed -i "s/^MATTERMOST_IMAGE_TAG=.*/MATTERMOST_IMAGE_TAG=release-10.5/" .env
 
+# Remap CALLS_PORT away from 8443 to avoid conflicts with Jitsi Meet
+sed -i "s/^CALLS_PORT=.*/CALLS_PORT=8445/" .env
+
 # Set postgres password if provided
 if [ -n "$POSTGRES_PASSWORD_ARG" ]; then
 	sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$POSTGRES_PASSWORD_ARG/" .env
@@ -58,4 +61,9 @@ echo ""
 echo "========================================"
 echo "Mattermost running at https://$DOMAIN_ARG (Caddy proxies host port 8065)"
 echo "========================================"
+echo ""
+echo "IMPORTANT: Mattermost Calls (voice/video) requires UDP port 8445 to be"
+echo "open on this server's firewall. If you are using ufw, run:"
+echo "  sudo ufw allow 8445/udp"
+echo "If you are using a cloud provider, open UDP port 8445 in your security group."
 echo "========================================"

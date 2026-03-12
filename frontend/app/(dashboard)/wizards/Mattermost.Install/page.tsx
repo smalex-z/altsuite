@@ -53,6 +53,20 @@ export default function MattermostWizardPage() {
               <p className="text-gray-500">{domain}</p>
             </div>
           </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <p className="text-sm font-semibold text-amber-800 mb-1">
+              ⚠️ Action required: open UDP port 8445
+            </p>
+            <p className="text-sm text-amber-700">
+              Mattermost Calls (voice/video) streams audio and video directly over UDP.
+              You must open port
+              {' '}
+              <strong>8445/UDP</strong>
+              {' '}
+              on your router or firewall (and in rathole/tunnel config if applicable).
+              Without this, Calls meetings will not connect.
+            </p>
+          </div>
           <p className="text-sm text-gray-500 mb-6">
             {'Caddy has been configured to proxy '}
             <strong>{domain}</strong>
@@ -93,6 +107,18 @@ export default function MattermostWizardPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8">
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ UDP port required for Calls</p>
+        <p className="text-sm text-amber-700">
+          Mattermost Calls (voice/video) streams directly over UDP
+          {' — this cannot go through an HTTP-only tunnel.'}
+          Make sure port
+          {' '}
+          <strong>8445/UDP</strong>
+          {' '}
+          is open on your router/firewall and forwarded to this server before proceeding.
+        </p>
+      </div>
       <MattermostWizard onComplete={handleWizardComplete} />
     </div>
   );
