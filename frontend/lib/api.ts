@@ -133,6 +133,14 @@ export async function configureDashboard(
   return data;
 }
 
+// --- User management types ---
+
+export interface User {
+  id: number;
+  username: string;
+  created_at: string;
+}
+
 // --- Auth ---
 
 export interface AuthStatus {
@@ -182,12 +190,6 @@ export async function setupFirstUser(username: string, password: string): Promis
 }
 
 // --- User management ---
-
-export interface User {
-  id: number;
-  username: string;
-  created_at: string;
-}
 
 export async function getUsers(): Promise<{ users: User[] }> {
   const res = await fetch(`${API_BASE_URL}/api/users`, { credentials: 'include' });
