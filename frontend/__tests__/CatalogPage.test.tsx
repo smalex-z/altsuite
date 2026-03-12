@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { redirect } from 'next/navigation';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
@@ -10,12 +11,9 @@ import { getCatalogApps } from '../lib/api';
 jest.mock('../lib/api', () => ({
   getCatalogApps: jest.fn(),
 }));
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
-  usePathname: () => '/',
-  useSearchParams: () => ({ get: () => null }),
-  redirect: jest.fn(),
-}));
+jest.mock('next/navigation') 
+
+const mockRedirect = jest.mocked(redirect);
 
 describe('CatalogPage', () => {
   afterEach(() => {
@@ -69,6 +67,6 @@ describe('CatalogPage', () => {
     expect(installBtn).toBeInTheDocument();
     await userEvent.click(installBtn);
     const nav = jest.requireMock('next/navigation');
-    expect(nav.redirect).toHaveBeenCalledWith('/wizards/AppOne.Install');
+    expect(mockRedirect).toHaveBeenCalledWith('/wizards/AppOne.Install');
   });
 });
