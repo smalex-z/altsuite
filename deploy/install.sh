@@ -78,6 +78,10 @@ if [ "$MODE" = "altsuite" ]; then
     chmod +x "$INSTALL_DIR/deploy/install.sh"
     cp -f "$SCRIPT_DIR/configure-dashboard.sh" "$INSTALL_DIR/deploy/configure-dashboard.sh"
     chmod +x "$INSTALL_DIR/deploy/configure-dashboard.sh"
+    cp -f "$SCRIPT_DIR/rm-service-dir.sh" "$INSTALL_DIR/deploy/rm-service-dir.sh"
+    chmod +x "$INSTALL_DIR/deploy/rm-service-dir.sh"
+    cp -f "$SCRIPT_DIR/read-caddy-config.sh" "$INSTALL_DIR/deploy/read-caddy-config.sh"
+    chmod +x "$INSTALL_DIR/deploy/read-caddy-config.sh"
     cp -f "$SCRIPT_DIR/services/"*.sh "$INSTALL_DIR/deploy/services/"
     chmod +x "$INSTALL_DIR/deploy/services/"*.sh
     chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/deploy"
@@ -241,8 +245,8 @@ EOF
             caddy_add_site "$DOMAIN_ARG" "localhost:9001" "$SERVICE_NAME"
             ;;
         gitea)
-            "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
-            caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
+            "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG" "${3:-}"
+            caddy_add_site "$DOMAIN_ARG" "localhost:3080" "$SERVICE_NAME"
             ;;
         caldotcom)
             "$SCRIPT_DIR/services/caldotcom-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
@@ -252,9 +256,24 @@ EOF
             "$SCRIPT_DIR/services/outline-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG" "${3:-}" "${4:-}" "${5:-}"
             caddy_add_site "$DOMAIN_ARG" "localhost:8890" "$SERVICE_NAME"
             ;;
+        jitsimeet)
+            "$SCRIPT_DIR/services/jitsi-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            # Jitsi needs WebSocket transport for /xmpp-websocket and /colibri-ws
+            conf_file="/etc/caddy/conf.d/${SERVICE_NAME}.caddy"
+            mkdir -p /etc/caddy/conf.d
+            cat > "$conf_file" <<EOF
+${DOMAIN_ARG} {
+    reverse_proxy localhost:8000
+}
+EOF
+            echo "Caddy: added ${DOMAIN_ARG} -> localhost:8000 (with WebSocket support)"
+            systemctl reload caddy
+            echo ""
+            echo "IMPORTANT: Open UDP port 10001 on your firewall/router for Jitsi video to work."
+            ;;
         *)
             echo "Unknown service: $SERVICE_NAME"
-            echo "Supported services: mattermost, penpot, gitea, caldotcom, outline"
+            echo "Supported services: mattermost, penpot, gitea, caldotcom, outline, jitsimeet"
             exit 1
             ;;
     esac
