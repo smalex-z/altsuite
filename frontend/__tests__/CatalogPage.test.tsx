@@ -61,12 +61,12 @@ describe('CatalogPage', () => {
     await userEvent.click(chatBtn);
     // After filtering, AppTwo (video) should not be visible
     expect(screen.queryByText('AppTwo')).not.toBeInTheDocument();
+    expect(screen.getByText('AppOne')).toBeInTheDocument();
 
     // Click install button for AppOne -> should call redirect
-    const installBtn = screen.getByRole('button', { name: 'Ready to Install' });
-    expect(installBtn).toBeInTheDocument();
-    await userEvent.click(installBtn);
-    const nav = jest.requireMock('next/navigation');
+    const installButtons = screen.getAllByRole('button', { name: /Ready to Install/i });
+    const appOneBtn = installButtons.find(btn => btn.closest('div')?.textContent?.includes('AppOne'));
+    await userEvent.setup().click(appOneBtn!);
     expect(mockRedirect).toHaveBeenCalledWith('/wizards/AppOne.Install');
   });
 });
