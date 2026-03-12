@@ -112,6 +112,36 @@ func (d *DB) GetUserByID(id int64) (*User, error) {
 	return &u, nil
 }
 
+// AuthenticateUser verifies username and password. Returns the user on success
+// or an opaque "invalid credentials" error on failure (prevents username enumeration).
+func (d *DB) AuthenticateUser(username, password string) (*User, error) {
+	var u User
+	var hash string
+	err := d.QueryRow(
+		`SELECT id, username, created_at, password_hash FROM users WHERE username = $1`,
+		username,
+	).Scan(&u.ID, &u.Username, &u.CreatedAt, &hash)
+	if err == sql.ErrNoRows {
+		// Run bcrypt anyway to avoid timing-based username enumeration.
+		bcrypt.CompareHashAndPassword([]byte("$2a$10$aaaaaaaaaaaaaaaaaaaaaa"), []byte(password)) //nolint:errcheck
+		return nil, errors.New("invalid credentials")
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+	return &u, nil
+}
+
+// HasUsers reports whether any users exist in the database.
+func (d *DB) HasUsers() (bool, error) {
+	var count int
+	err := d.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&count)
+	return count > 0, err
+}
+
 // UpdatePassword sets a new password for the user (by ID).
 func (d *DB) UpdatePassword(id int64, newPassword string) error {
 	if newPassword == "" {
