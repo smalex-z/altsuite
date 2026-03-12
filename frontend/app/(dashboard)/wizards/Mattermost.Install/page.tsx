@@ -58,7 +58,8 @@ export default function MattermostWizardPage() {
               ⚠️ Action required: open UDP port 8445
             </p>
             <p className="text-sm text-amber-700">
-              Mattermost Calls (voice/video) streams audio and video directly over UDP. You must open port
+              Mattermost Calls (voice/video) streams audio and video directly over UDP.
+              You must open port
               {' '}
               <strong>8445/UDP</strong>
               {' '}
