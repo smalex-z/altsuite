@@ -11,7 +11,6 @@ jest.mock('../lib/api', () => ({
   getCatalogApps: jest.fn(),
 }));
 
-
 describe('CatalogPage', () => {
   afterEach(() => {
     jest.clearAllMocks();
