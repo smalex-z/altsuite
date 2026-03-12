@@ -1,0 +1,312 @@
+basePath: /api
+definitions:
+  collectors.MetricsPoint:
+    properties:
+      cpu:
+        type: number
+      disk:
+        type: number
+      memory:
+        type: number
+      network:
+        type: number
+      timestamp:
+        type: string
+    type: object
+  controllers.historyResponse:
+    properties:
+      metrics:
+        items:
+          $ref: '#/definitions/collectors.MetricsPoint'
+        type: array
+      range:
+        type: string
+    type: object
+  main.HealthResponse:
+    properties:
+      status:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  main.PackageListResponse:
+    properties:
+      count:
+        type: integer
+      packages:
+        items:
+          $ref: '#/definitions/main.SupportedApp'
+        type: array
+    type: object
+  main.ServiceActionRequest:
+    properties:
+      action:
+        description: start, stop, restart, enable, disable
+        type: string
+      service_name:
+        type: string
+    type: object
+  main.ServiceStatusResponse:
+    properties:
+      error:
+        type: string
+      is_running:
+        type: boolean
+      output:
+        type: string
+      service_name:
+        type: string
+    type: object
+  main.Spec:
+    properties:
+      cpu:
+        type: string
+      memory:
+        type: string
+      network:
+        type: string
+    type: object
+  main.SupportedApp:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      installed:
+        type: boolean
+      monthlySavings:
+        type: number
+      name:
+        type: string
+      replaces:
+        type: string
+      requiredSpecs:
+        $ref: '#/definitions/main.Spec'
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://www.example.com/support
+  description: Altsuite backend API documentation
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Altsuite API
+  version: "1.0"
+paths:
+  /docker/containers:
+    get:
+      description: List all Docker containers running on the system
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Docker containers output
+          schema:
+            type: string
+        "500":
+          description: Docker not installed or error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List Docker containers
+      tags:
+      - Docker
+  /health:
+    get:
+      description: Returns service health and timestamp
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: Health check
+      tags:
+      - Health
+  /metrics/current:
+    get:
+      description: Returns the most recent system metrics snapshot (CPU, Memory, Network,
+        Disk usage)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/collectors.MetricsPoint'
+        "503":
+          description: No metrics available yet
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get current metrics
+      tags:
+      - Metrics
+  /metrics/history:
+    get:
+      description: Returns historical metrics for a specified time range with automatic
+        downsampling for longer periods
+      parameters:
+      - default: minute
+        description: 'Time range: minute (default), hour, day, week, or month'
+        in: query
+        name: range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.historyResponse'
+      summary: Get historical metrics
+      tags:
+      - Metrics
+  /packages:
+    get:
+      description: Return list of installed packages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.PackageListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List packages
+      tags:
+      - Packages
+  /packages/{name}:
+    get:
+      description: Retrieve detailed information about a specific package
+      parameters:
+      - description: Package name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Package information
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get package information
+      tags:
+      - Packages
+  /packages/install:
+    post:
+      consumes:
+      - application/json
+      description: Install one or more supported packages
+      parameters:
+      - description: Package names
+        in: body
+        name: packages
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Install packages
+      tags:
+      - Packages
+  /services/{name}/status:
+    get:
+      description: Return running status for a given service
+      parameters:
+      - description: Service name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ServiceStatusResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get service status
+      tags:
+      - Services
+  /services/action:
+    post:
+      consumes:
+      - application/json
+      description: Start/stop/restart/enable/disable a system service
+      parameters:
+      - description: Service action request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.ServiceActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ServiceStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Perform a service action
+      tags:
+      - Services
+swagger: "2.0"

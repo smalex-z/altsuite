@@ -19,6 +19,13 @@ func NewMetricsController(c *collectors.MetricsCollector) *MetricsController {
 }
 
 // HandleCurrent returns the most recent metrics snapshot.
+// @Summary Get current metrics
+// @Description Returns the most recent system metrics snapshot (CPU, Memory, Network, Disk usage)
+// @Tags Metrics
+// @Produce json
+// @Success 200 {object} collectors.MetricsPoint
+// @Failure 503 {object} map[string]string "No metrics available yet"
+// @Router /metrics/current [get]
 func (mc *MetricsController) HandleCurrent(w http.ResponseWriter, r *http.Request) {
 	latest := mc.Collector.Store.GetLatest()
 	if latest == nil {
@@ -37,6 +44,13 @@ type historyResponse struct {
 }
 
 // HandleHistory returns historical metrics for the requested time range.
+// @Summary Get historical metrics
+// @Description Returns historical metrics for a specified time range with automatic downsampling for longer periods
+// @Tags Metrics
+// @Produce json
+// @Param range query string false "Time range: minute (default), hour, day, week, or month" default(minute)
+// @Success 200 {object} historyResponse
+// @Router /metrics/history [get]
 func (mc *MetricsController) HandleHistory(w http.ResponseWriter, r *http.Request) {
 	rangeParam := r.URL.Query().Get("range")
 
