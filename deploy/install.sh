@@ -241,8 +241,8 @@ EOF
             caddy_add_site "$DOMAIN_ARG" "localhost:9001" "$SERVICE_NAME"
             ;;
         gitea)
-            "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
-            caddy_add_site "$DOMAIN_ARG" "localhost:3000" "$SERVICE_NAME"
+            "$SCRIPT_DIR/services/gitea-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG" "${3:-}"
+            caddy_add_site "$DOMAIN_ARG" "localhost:3080" "$SERVICE_NAME"
             ;;
         caldotcom)
             "$SCRIPT_DIR/services/caldotcom-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"

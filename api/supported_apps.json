@@ -24,25 +24,25 @@
   },
   {
     "id": "2",
-    "name": "GitLab",
-    "description": "Complete DevOps platform with Git repository management, CI/CD pipelines, and issue tracking.",
+    "name": "Gitea",
+    "description": "Lightweight self-hosted Git service with repository management, issue tracking, and CI/CD via Gitea Actions.",
     "category": "Development",
     "replaces": "GitHub Enterprise",
     "monthlyCost": 0,
-    "monthlySavings": 1050,
+    "monthlySavings": 420,
     "features": [
       "Git repositories",
-      "CI/CD pipelines",
       "Issue tracking",
-      "Code review",
+      "Pull requests",
+      "Gitea Actions CI/CD",
       "Container registry"
     ],
     "recommended": true,
     "installed": false,
     "requiredSpecs": {
-      "cpu": "4 vCPU",
-      "memory": "8 GB",
-      "network": "20 Mbps"
+      "cpu": "1 vCPU",
+      "memory": "1 GB",
+      "network": "5 Mbps"
     }
   },
   {
@@ -69,7 +69,7 @@
     }
   },
   {
-    "id": "4",
+    "id": "3",
     "name": "JitsiMeet",
     "description": "Secure and feature-rich video conferencing solution with screen sharing and recording.",
     "category": "Communication",
@@ -92,7 +92,7 @@
     }
   },
   {
-    "id": "5",
+    "id": "4",
     "name": "Nextcloud",
     "description": "Self-hosted file sync and share platform with office suite and collaboration tools.",
     "category": "Storage",
@@ -115,7 +115,7 @@
     }
   },
   {
-    "id": "6",
+    "id": "5",
     "name": "Rocket.Chat",
     "description": "Customizable team communication platform with omnichannel capabilities.",
     "category": "Communication",
@@ -138,7 +138,7 @@
     }
   },
   {
-    "id": "7",
+    "id": "6",
     "name": "Taiga",
     "description": "Project management platform for agile teams with scrum and kanban support.",
     "category": "Project Management",
@@ -161,7 +161,7 @@
     }
   },
   {
-    "id": "8",
+    "id": "7",
     "name": "Matomo",
     "description": "Privacy-focused web analytics platform that respects user privacy.",
     "category": "Analytics",
