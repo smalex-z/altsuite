@@ -1,5 +1,8 @@
 name: Go Unit Tests
 
+# User-management tests need Postgres.
+# Repository secret TEST_POSTGRES_PASSWORD
+
 on:
   push:
     branches: [ main ]
@@ -13,6 +16,20 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: altsuite
+          POSTGRES_PASSWORD: ${{ secrets.TEST_POSTGRES_PASSWORD }}
+          POSTGRES_DB: altsuite
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U altsuite -d altsuite"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,6 +38,8 @@ jobs:
         with:
           go-version: '1.24'
       - name: Run unit tests and generate coverage
+        env:
+          DATABASE_URL: postgres://altsuite:${{ secrets.TEST_POSTGRES_PASSWORD }}@localhost:5432/altsuite?sslmode=disable
         run: |
           cd api
           go test -v -race -coverprofile=coverage.out -coverpkg=./... ./... | tee test_output.txt

@@ -87,6 +87,8 @@ sudo systemctl stop altsuite
 
 The API will be available at `http://localhost:8080`
 
+**User management:** If Docker is installed, the installer automatically sets up a Postgres container and `/opt/altsuite/env` with `DATABASE_URL`, so the **Users** tab works after install. If you install without Docker, you can enable it later: run `deploy/altsuite-postgres` (or use your own Postgres), create `/opt/altsuite/env` with `DATABASE_URL=postgres://altsuite:PASSWORD@127.0.0.1:5432/altsuite?sslmode=disable`, then `sudo systemctl restart altsuite`. Without `DATABASE_URL`, the Users page shows "User management not configured".
+
 **Security Note:** The installation configures passwordless sudo for specific operations (systemctl, apt-get, docker) limited to the `altsuite` user only. See `/etc/sudoers.d/altsuite` after installation.
 
 ### Development:
@@ -114,16 +116,23 @@ go mod download
 ```
 
 Start the server
-```
+```bash
 cd api
 go run main.go
 ```
 
+if getting errors, try:
+```bash
+go run .
+```
 ## Requirements
 
 - **Development**: Go 1.21+, Node.js 18+
 - **Production**: Linux system (systemd recommended)
 
+## CI
+
+The Go test workflow runs user-management tests against Postgres. Add a repository secret **`TEST_POSTGRES_PASSWORD`**
 
 ## Contributors
 

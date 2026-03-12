@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Package, ShoppingBag, Server,
+  LayoutDashboard, Package, ShoppingBag, Server, Users,
 } from 'lucide-react';
+import { getSetupStatus } from '@/lib/api';
 
 const navItems = [
   {
@@ -16,6 +18,9 @@ const navItems = [
   {
     href: '/catalog', icon: ShoppingBag, label: 'App Catalog', end: false,
   },
+  {
+    href: '/users', icon: Users, label: 'Users', end: false,
+  },
 ];
 
 export default function DashboardLayout({
@@ -24,6 +29,27 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // On first load, check if the dashboard domain has been configured.
+  // - Not configured → redirect to the setup wizard.
+  // - Configured but browser is on a different hostname (e.g. raw :8080) → redirect to the domain.
+  useEffect(() => {
+    getSetupStatus()
+      .then((status) => {
+        if (!status.configured) {
+          router.replace('/setup');
+        } else if (
+          status.domain
+          && typeof window !== 'undefined'
+          && !['localhost', '127.0.0.1'].includes(window.location.hostname)
+          && window.location.hostname !== status.domain
+        ) {
+          window.location.href = `https://${status.domain}`;
+        }
+      })
+      .catch(() => { /* API unreachable — let the dashboard load */ });
+  }, [router]);
 
   return (
     <div className="flex h-screen bg-gray-50">

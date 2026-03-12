@@ -11,6 +11,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -21,7 +22,26 @@ type PrivilegedOps struct {
 	// validating systemd service and package names
 	validServiceName *regexp.Regexp
 	validPackageName *regexp.Regexp
+	validDomain      *regexp.Regexp
 }
+
+// allowedServices is the whitelist of services that can be installed via the API.
+var allowedServices = map[string]bool{
+	"mattermost": true,
+	"penpot":     true,
+	"gitea":      true,
+	"caldotcom":  true,
+	"outline":    true,
+}
+
+// serviceConfigKeys defines the ordered extra positional args each service script accepts beyond domain.
+var serviceConfigKeys = map[string][]string{
+	"mattermost": {"postgresPassword", "supportEmail"},
+	"outline":    {"googleClientId", "googleClientSecret", "postgresPassword"},
+}
+
+// validConfigValue permits characters found in OAuth tokens and similar config values.
+var validConfigValue = regexp.MustCompile(`^[a-zA-Z0-9\-_.@/]+$`)
 
 // New PrivilegedOps instance
 func NewPrivilegedOps() *PrivilegedOps {
@@ -29,6 +49,8 @@ func NewPrivilegedOps() *PrivilegedOps {
 		// Alphanumeric, hyphens, underscores, and dots only
 		validServiceName: regexp.MustCompile(`^[a-zA-Z0-9\-_.@]+$`),
 		validPackageName: regexp.MustCompile(`^[a-zA-Z0-9\-_.+]+$`),
+		// Hostnames / FQDNs: labels separated by dots, no shell metacharacters
+		validDomain: regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$`),
 	}
 }
 
@@ -136,6 +158,79 @@ func (p *PrivilegedOps) GetPackageInfo(packageName string) (string, error) {
 	}
 
 	return string(output), nil
+}
+
+// ========================= Service Installation =========================
+
+// InstallService runs the deploy/install.sh script for a named service.
+// Both serviceName and domain are strictly validated before being passed
+// to the shell to prevent command injection.
+func (p *PrivilegedOps) InstallService(serviceName, domain string, config map[string]string) (string, error) {
+	if !allowedServices[serviceName] {
+		return "", fmt.Errorf("unsupported service: %s", serviceName)
+	}
+	if !p.validDomain.MatchString(domain) {
+		return "", errors.New("invalid domain: must be a valid hostname or FQDN")
+	}
+	args := []string{"/opt/altsuite/deploy/install.sh", serviceName, domain}
+	for _, key := range serviceConfigKeys[serviceName] {
+		val := config[key]
+		if val != "" && !validConfigValue.MatchString(val) {
+			return "", fmt.Errorf("invalid value for config key %q", key)
+		}
+		args = append(args, val)
+	}
+	cmd := exec.Command("sudo", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("service install failed: %w\n%s", err, string(output))
+	}
+	return string(output), nil
+}
+
+// ========================= Dashboard Setup =========================
+
+// SetupStatus reports whether the dashboard domain has been configured.
+type SetupStatus struct {
+	Configured bool   `json:"configured"`
+	Domain     string `json:"domain,omitempty"`
+}
+
+// GetSetupStatus checks whether /etc/caddy/conf.d/dashboard.caddy exists and
+// returns the configured domain if it does.
+func (p *PrivilegedOps) GetSetupStatus() SetupStatus {
+	const confFile = "/etc/caddy/conf.d/dashboard.caddy"
+	content, err := os.ReadFile(confFile)
+	if err != nil {
+		return SetupStatus{Configured: false}
+	}
+	// The first non-blank, non-comment line is `<domain> {` — extract the domain.
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			return SetupStatus{Configured: true, Domain: fields[0]}
+		}
+		break
+	}
+	return SetupStatus{Configured: true}
+}
+
+// ConfigureDashboard writes the Caddy reverse-proxy config for the dashboard
+// domain and reloads Caddy.
+func (p *PrivilegedOps) ConfigureDashboard(domain string) (string, error) {
+	if !p.validDomain.MatchString(domain) {
+		return "", errors.New("invalid domain: must be a valid hostname or FQDN")
+	}
+	cmd := exec.Command("sudo", "/opt/altsuite/deploy/configure-dashboard.sh", domain)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("configure dashboard failed: %w\n%s", err, string(out))
+	}
+	return string(out), nil
 }
 
 // ========================= Docker Operations =========================

@@ -15,10 +15,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -27,6 +29,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/smalex/altsuite/collectors"
+	"github.com/smalex/altsuite/db"
 	"github.com/smalex/altsuite/routes"
 )
 
@@ -47,6 +50,10 @@ type ServiceActionRequest struct {
 	Action      string `json:"action"` // start, stop, restart, enable, disable
 }
 
+type SetupConfigureRequest struct {
+	Domain string `json:"domain"`
+}
+
 type PackageListResponse struct {
 	Packages []SupportedApp `json:"packages"`
 	Count    int            `json:"count"`
@@ -54,11 +61,66 @@ type PackageListResponse struct {
 
 const shutdownTimeout = 5 * time.Second
 
+// spaFileServer serves a Next.js static export where pages are written as
+// <route>.html rather than <route>/index.html. For each request it tries
+// the path as-is, then appends ".html", then falls back to index.html.
+func spaFileServer(dir string) http.Handler {
+	fs := http.Dir(dir)
+	plain := http.FileServer(fs)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upath := r.URL.Path
+
+		// Try the path as-is (covers root, _next/*, static assets, etc.)
+		if f, err := fs.Open(upath); err == nil {
+			info, statErr := f.Stat()
+			f.Close()
+			if statErr == nil {
+				if !info.IsDir() {
+					plain.ServeHTTP(w, r)
+					return
+				}
+				// Directory exists — check for an index.html inside it.
+				if idx, err2 := fs.Open(upath + "/index.html"); err2 == nil {
+					idx.Close()
+					plain.ServeHTTP(w, r)
+					return
+				}
+				// Dir has no index.html — fall through to try the .html sibling.
+			}
+		}
+
+		// Try <path>.html (the Next.js static export pattern).
+		if f, err := fs.Open(upath + ".html"); err == nil {
+			f.Close()
+			r.URL.Path = upath + ".html"
+			plain.ServeHTTP(w, r)
+			return
+		}
+
+		// Fallback: serve index.html for any unmatched route.
+		r.URL.Path = "/index.html"
+		plain.ServeHTTP(w, r)
+	})
+}
+
 var privOps *PrivilegedOps
+var userDB *db.DB
 
 func main() {
 	// Initialize privileged operations handler
 	privOps = NewPrivilegedOps()
+
+	// Connect to Postgres for user management if configured
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		var err error
+		userDB, err = db.Open(url)
+		if err != nil {
+			log.Printf("User DB: could not connect (user management disabled): %v", err)
+		} else {
+			defer userDB.Close()
+			log.Println("User DB: connected")
+		}
+	}
 
 	// Create a cancellable context for the metrics collector; it will be
 	// cancelled during graceful shutdown so the background goroutine exits.
@@ -78,9 +140,15 @@ func main() {
 	// System metrics endpoints
 	routes.RegisterMetricsRoutes(api, metricsCollector)
 
+	// User management endpoints (when DATABASE_URL is set)
+	api.HandleFunc("/users", listUsersHandler).Methods("GET")
+	api.HandleFunc("/users", createUserHandler).Methods("POST")
+	api.HandleFunc("/users/{id}/password", changePasswordHandler).Methods("PUT")
+
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
 	api.HandleFunc("/services/action", serviceActionHandler).Methods("POST")
+	api.HandleFunc("/services/install", installServiceHandler).Methods("POST")
 
 	// Package management endpoints
 	api.HandleFunc("/packages", listPackagesHandler).Methods("GET")
@@ -94,9 +162,13 @@ func main() {
 	// The swagger JSON will be expected at /docs/swagger.json
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
+	// First-time setup endpoints
+	api.HandleFunc("/setup/status", setupStatusHandler).Methods("GET")
+	api.HandleFunc("/setup/configure", setupConfigureHandler).Methods("POST")
+
 	// Serve frontend static files
 	frontendDir := "/opt/altsuite/frontend"
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(frontendDir)))
+	r.PathPrefix("/").Handler(spaFileServer(frontendDir))
 
 	// CORS middleware for development
 	r.Use(corsMiddleware)
@@ -147,6 +219,46 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// setupStatusHandler godoc
+// @Summary Get setup status
+// @Description Returns the current setup status of the dashboard
+// @Tags Setup
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /setup/status [get]
+func setupStatusHandler(w http.ResponseWriter, r *http.Request) {
+	status := privOps.GetSetupStatus()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+// setupConfigureHandler godoc
+// @Summary Configure dashboard
+// @Description Configure the dashboard with a domain name
+// @Tags Setup
+// @Accept json
+// @Produce json
+// @Param request body SetupConfigureRequest true "Domain configuration"
+// @Success 200 {object} map[string]string "Configuration output and domain"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Configuration error"
+// @Router /setup/configure [post]
+func setupConfigureHandler(w http.ResponseWriter, r *http.Request) {
+	var req SetupConfigureRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	output, err := privOps.ConfigureDashboard(req.Domain)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error(), "output": output})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"output": output, "domain": req.Domain})
 }
 
 // getServiceStatusHandler godoc
@@ -315,6 +427,48 @@ func installPackageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// installServiceHandler godoc
+// @Summary Install a service
+// @Description Install a named service with specified domain and optional configuration
+// @Tags Services
+// @Accept json
+// @Produce json
+// @Param request body map[string]interface{} true "Service installation request with service, domain, and optional config"
+// @Success 200 {object} map[string]interface{} "Installation output"
+// @Failure 400 {object} map[string]string "Missing required fields or invalid request"
+// @Failure 500 {object} map[string]interface{} "Installation error with output"
+// @Router /services/install [post]
+func installServiceHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Service string            `json:"service"`
+		Domain  string            `json:"domain"`
+		Config  map[string]string `json:"config"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Service == "" || req.Domain == "" {
+		http.Error(w, "service and domain are required", http.StatusBadRequest)
+		return
+	}
+	if req.Config == nil {
+		req.Config = map[string]string{}
+	}
+
+	output, err := privOps.InstallService(req.Service, req.Domain, req.Config)
+	response := map[string]interface{}{"output": output}
+	if err != nil {
+		response["error"] = err.Error()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Handler for listing Docker containers
 // listDockerContainersHandler godoc
 // @Summary List Docker containers
@@ -334,6 +488,111 @@ func listDockerContainersHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(output))
+}
+
+// --- User management ---
+
+// listUsersHandler godoc
+// @Summary List users
+// @Description Returns a list of all users (requires DATABASE_URL to be configured)
+// @Tags Users
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of users"
+// @Failure 503 {object} map[string]string "User management not configured"
+// @Failure 500 {object} map[string]string "Database error"
+// @Router /users [get]
+func listUsersHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, "user management not configured (set DATABASE_URL)", http.StatusServiceUnavailable)
+		return
+	}
+	users, err := userDB.ListUsers()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"users": users})
+}
+
+// createUserHandler godoc
+// @Summary Create a new user
+// @Description Create a new user with username and password (requires DATABASE_URL to be configured)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Username and password"
+// @Success 201 {object} map[string]interface{} "Created user"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 409 {object} map[string]string "Username already exists"
+// @Failure 503 {object} map[string]string "User management not configured"
+// @Router /users [post]
+func createUserHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, "user management not configured (set DATABASE_URL)", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	u, err := userDB.CreateUser(req.Username, req.Password)
+	if err != nil {
+		if errors.Is(err, db.ErrDuplicateUsername) {
+			http.Error(w, "username already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(u)
+}
+
+// changePasswordHandler godoc
+// @Summary Change user password
+// @Description Update the password for a specific user (requires DATABASE_URL to be configured)
+// @Tags Users
+// @Accept json
+// @Param id path int true "User ID"
+// @Param request body map[string]string true "New password"
+// @Success 204 "Password changed successfully"
+// @Failure 400 {object} map[string]string "Invalid user ID or request body"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 503 {object} map[string]string "User management not configured"
+// @Router /users/{id}/password [put]
+func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, "user management not configured (set DATABASE_URL)", http.StatusServiceUnavailable)
+		return
+	}
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := userDB.UpdatePassword(id, req.Password); err != nil {
+		if err.Error() == "user not found" {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

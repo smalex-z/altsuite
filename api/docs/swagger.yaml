@@ -57,6 +57,11 @@ definitions:
       service_name:
         type: string
     type: object
+  main.SetupConfigureRequest:
+    properties:
+      domain:
+        type: string
+    type: object
   main.Spec:
     properties:
       cpu:
@@ -309,4 +314,203 @@ paths:
       summary: Perform a service action
       tags:
       - Services
+  /services/install:
+    post:
+      consumes:
+      - application/json
+      description: Install a named service with specified domain and optional configuration
+      parameters:
+      - description: Service installation request with service, domain, and optional
+          config
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Installation output
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing required fields or invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Installation error with output
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Install a service
+      tags:
+      - Services
+  /setup/configure:
+    post:
+      consumes:
+      - application/json
+      description: Configure the dashboard with a domain name
+      parameters:
+      - description: Domain configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.SetupConfigureRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Configuration output and domain
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Configuration error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Configure dashboard
+      tags:
+      - Setup
+  /setup/status:
+    get:
+      description: Returns the current setup status of the dashboard
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get setup status
+      tags:
+      - Setup
+  /users:
+    get:
+      description: Returns a list of all users (requires DATABASE_URL to be configured)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with username and password (requires DATABASE_URL
+        to be configured)
+      parameters:
+      - description: Username and password
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Username already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new user
+      tags:
+      - Users
+  /users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: Update the password for a specific user (requires DATABASE_URL
+        to be configured)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New password
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      responses:
+        "204":
+          description: Password changed successfully
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Change user password
+      tags:
+      - Users
 swagger: "2.0"
