@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log"
@@ -9,6 +11,9 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -91,6 +96,109 @@ func spaFileServer(dir string) http.Handler {
 var privOps *PrivilegedOps
 var userDB *db.DB
 
+// --- Session management ---
+
+type sessionEntry struct {
+	userID    int64
+	expiresAt time.Time
+}
+
+var (
+	sessionStore sync.Map  // map[string]sessionEntry
+	authEnabled  atomic.Bool
+)
+
+const (
+	sessionCookieName = "altsuite_session"
+	sessionTTL        = 24 * time.Hour
+)
+
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+func createSession(w http.ResponseWriter, userID int64) error {
+	token, err := generateToken()
+	if err != nil {
+		return err
+	}
+	sessionStore.Store(token, sessionEntry{
+		userID:    userID,
+		expiresAt: time.Now().Add(sessionTTL),
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(sessionTTL.Seconds()),
+	})
+	return nil
+}
+
+func getSessionUser(r *http.Request) (int64, bool) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return 0, false
+	}
+	val, ok := sessionStore.Load(cookie.Value)
+	if !ok {
+		return 0, false
+	}
+	entry := val.(sessionEntry)
+	if time.Now().After(entry.expiresAt) {
+		sessionStore.Delete(cookie.Value)
+		return 0, false
+	}
+	return entry.userID, true
+}
+
+func deleteSessionCookie(w http.ResponseWriter, r *http.Request) {
+	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+		sessionStore.Delete(cookie.Value)
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+}
+
+// apiAuthMiddleware enforces authentication for all /api routes once users exist.
+// Public prefixes are always allowed without a valid session.
+func apiAuthMiddleware(next http.Handler) http.Handler {
+	publicPrefixes := []string{
+		"/api/health",
+		"/api/auth/",
+		"/api/setup/status",
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !authEnabled.Load() {
+			next.ServeHTTP(w, r)
+			return
+		}
+		path := r.URL.Path
+		for _, p := range publicPrefixes {
+			if strings.HasPrefix(path, p) {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		if _, ok := getSessionUser(r); !ok {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	// Initialize privileged operations handler
 	privOps = NewPrivilegedOps()
@@ -104,6 +212,11 @@ func main() {
 		} else {
 			defer userDB.Close()
 			log.Println("User DB: connected")
+			// Enable auth if users already exist.
+			if has, err := userDB.HasUsers(); err == nil && has {
+				authEnabled.Store(true)
+				log.Println("Auth: enabled (users found)")
+			}
 		}
 	}
 
@@ -120,7 +233,14 @@ func main() {
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
+	api.Use(apiAuthMiddleware)
 	api.HandleFunc("/health", healthHandler).Methods("GET")
+
+	// Auth endpoints (always public)
+	api.HandleFunc("/auth/status", authStatusHandler).Methods("GET")
+	api.HandleFunc("/auth/login", loginHandler).Methods("POST")
+	api.HandleFunc("/auth/logout", logoutHandler).Methods("POST")
+	api.HandleFunc("/auth/setup", firstUserSetupHandler).Methods("POST")
 
 	// System metrics endpoints
 	routes.RegisterMetricsRoutes(api, metricsCollector)
@@ -385,6 +505,100 @@ func listDockerContainersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(output))
 }
 
+// --- Auth handlers ---
+
+type AuthStatusResponse struct {
+	Authenticated      bool   `json:"authenticated"`
+	HasUsers           bool   `json:"hasUsers"`
+	UserMgmtConfigured bool   `json:"userMgmtConfigured"`
+	SetupComplete      bool   `json:"setupComplete"`
+	Domain             string `json:"domain,omitempty"`
+}
+
+func authStatusHandler(w http.ResponseWriter, r *http.Request) {
+	_, authenticated := getSessionUser(r)
+	setupStatus := privOps.GetSetupStatus()
+	resp := AuthStatusResponse{
+		Authenticated:      authenticated,
+		HasUsers:           authEnabled.Load(),
+		UserMgmtConfigured: userDB != nil,
+		SetupComplete:      setupStatus.Configured,
+		Domain:             setupStatus.Domain,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, `{"error":"user management not configured"}`, http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	user, err := userDB.AuthenticateUser(req.Username, req.Password)
+	if err != nil {
+		http.Error(w, `{"error":"invalid credentials"}`, http.StatusUnauthorized)
+		return
+	}
+	if err := createSession(w, user.ID); err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	deleteSessionCookie(w, r)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// firstUserSetupHandler creates the first admin user and auto-logs them in.
+// Returns 400 if users already exist.
+func firstUserSetupHandler(w http.ResponseWriter, r *http.Request) {
+	if userDB == nil {
+		http.Error(w, `{"error":"user management not configured"}`, http.StatusServiceUnavailable)
+		return
+	}
+	if authEnabled.Load() {
+		http.Error(w, `{"error":"setup already complete"}`, http.StatusBadRequest)
+		return
+	}
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+		return
+	}
+	user, err := userDB.CreateUser(req.Username, req.Password)
+	if err != nil {
+		if errors.Is(err, db.ErrDuplicateUsername) {
+			http.Error(w, `{"error":"username already exists"}`, http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	authEnabled.Store(true)
+	log.Println("Auth: enabled (first user created)")
+	if err := createSession(w, user.ID); err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(user)
+}
+
 // --- User management ---
 
 func listUsersHandler(w http.ResponseWriter, r *http.Request) {
@@ -459,7 +673,14 @@ func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Vary", "Origin")
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
