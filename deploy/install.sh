@@ -252,9 +252,24 @@ EOF
             "$SCRIPT_DIR/services/outline-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG" "${3:-}" "${4:-}" "${5:-}"
             caddy_add_site "$DOMAIN_ARG" "localhost:8890" "$SERVICE_NAME"
             ;;
+        jitsimeet)
+            "$SCRIPT_DIR/services/jitsi-install.sh" "$SERVICE_DIR" "$DOMAIN_ARG"
+            # Jitsi needs WebSocket transport for /xmpp-websocket and /colibri-ws
+            conf_file="/etc/caddy/conf.d/${SERVICE_NAME}.caddy"
+            mkdir -p /etc/caddy/conf.d
+            cat > "$conf_file" <<EOF
+${DOMAIN_ARG} {
+    reverse_proxy localhost:8000
+}
+EOF
+            echo "Caddy: added ${DOMAIN_ARG} -> localhost:8000 (with WebSocket support)"
+            systemctl reload caddy
+            echo ""
+            echo "IMPORTANT: Open UDP port 10001 on your firewall/router for Jitsi video to work."
+            ;;
         *)
             echo "Unknown service: $SERVICE_NAME"
-            echo "Supported services: mattermost, penpot, gitea, caldotcom, outline"
+            echo "Supported services: mattermost, penpot, gitea, caldotcom, outline, jitsimeet"
             exit 1
             ;;
     esac

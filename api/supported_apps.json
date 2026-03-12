@@ -69,7 +69,7 @@
     }
   },
   {
-    "id": "3",
+    "id": "4",
     "name": "JitsiMeet",
     "description": "Secure and feature-rich video conferencing solution with screen sharing and recording.",
     "category": "Communication",
@@ -92,7 +92,7 @@
     }
   },
   {
-    "id": "4",
+    "id": "5",
     "name": "Nextcloud",
     "description": "Self-hosted file sync and share platform with office suite and collaboration tools.",
     "category": "Storage",
@@ -108,6 +108,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "2 vCPU",
       "memory": "4 GB",
@@ -115,7 +116,7 @@
     }
   },
   {
-    "id": "5",
+    "id": "6",
     "name": "Rocket.Chat",
     "description": "Customizable team communication platform with omnichannel capabilities.",
     "category": "Communication",
@@ -131,6 +132,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "2 vCPU",
       "memory": "2 GB",
@@ -138,7 +140,7 @@
     }
   },
   {
-    "id": "6",
+    "id": "7",
     "name": "Taiga",
     "description": "Project management platform for agile teams with scrum and kanban support.",
     "category": "Project Management",
@@ -154,6 +156,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "1 vCPU",
       "memory": "2 GB",
@@ -161,7 +164,7 @@
     }
   },
   {
-    "id": "7",
+    "id": "8",
     "name": "Matomo",
     "description": "Privacy-focused web analytics platform that respects user privacy.",
     "category": "Analytics",
@@ -177,6 +180,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "2 vCPU",
       "memory": "4 GB",

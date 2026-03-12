@@ -32,6 +32,7 @@ var allowedServices = map[string]bool{
 	"gitea":      true,
 	"caldotcom":  true,
 	"outline":    true,
+	"jitsimeet":  true,
 }
 
 // serviceConfigKeys defines the ordered extra positional args each service script accepts beyond domain.
