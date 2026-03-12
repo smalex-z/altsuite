@@ -11,8 +11,16 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Build API
 echo "Building Go API..."
 cd "$PROJECT_ROOT/api"
+go mod tidy
 go build -o altsuite .
 echo "✓ API binary created: api/altsuite"
+# Build documentation for API 
+echo "Generating API documentation... to be served at /docs/index.html"
+go install github.com/swaggo/swag/cmd/swag@latest
+export PATH=$PATH:~/go/bin
+swag init -g main.go -o ./docs
+echo "✓ API documentation generated: api/docs/"
+
 
 # Build Frontend
 echo "Building Frontend..."

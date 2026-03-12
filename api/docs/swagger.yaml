@@ -1,0 +1,516 @@
+basePath: /api
+definitions:
+  collectors.MetricsPoint:
+    properties:
+      cpu:
+        type: number
+      disk:
+        type: number
+      memory:
+        type: number
+      network:
+        type: number
+      timestamp:
+        type: string
+    type: object
+  controllers.historyResponse:
+    properties:
+      metrics:
+        items:
+          $ref: '#/definitions/collectors.MetricsPoint'
+        type: array
+      range:
+        type: string
+    type: object
+  main.HealthResponse:
+    properties:
+      status:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  main.PackageListResponse:
+    properties:
+      count:
+        type: integer
+      packages:
+        items:
+          $ref: '#/definitions/main.SupportedApp'
+        type: array
+    type: object
+  main.ServiceActionRequest:
+    properties:
+      action:
+        description: start, stop, restart, enable, disable
+        type: string
+      service_name:
+        type: string
+    type: object
+  main.ServiceStatusResponse:
+    properties:
+      error:
+        type: string
+      is_running:
+        type: boolean
+      output:
+        type: string
+      service_name:
+        type: string
+    type: object
+  main.SetupConfigureRequest:
+    properties:
+      domain:
+        type: string
+    type: object
+  main.Spec:
+    properties:
+      cpu:
+        type: string
+      memory:
+        type: string
+      network:
+        type: string
+    type: object
+  main.SupportedApp:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      installed:
+        type: boolean
+      monthlySavings:
+        type: number
+      name:
+        type: string
+      replaces:
+        type: string
+      requiredSpecs:
+        $ref: '#/definitions/main.Spec'
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://www.example.com/support
+  description: Altsuite backend API documentation
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Altsuite API
+  version: "1.0"
+paths:
+  /docker/containers:
+    get:
+      description: List all Docker containers running on the system
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Docker containers output
+          schema:
+            type: string
+        "500":
+          description: Docker not installed or error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List Docker containers
+      tags:
+      - Docker
+  /health:
+    get:
+      description: Returns service health and timestamp
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: Health check
+      tags:
+      - Health
+  /metrics/current:
+    get:
+      description: Returns the most recent system metrics snapshot (CPU, Memory, Network,
+        Disk usage)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/collectors.MetricsPoint'
+        "503":
+          description: No metrics available yet
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get current metrics
+      tags:
+      - Metrics
+  /metrics/history:
+    get:
+      description: Returns historical metrics for a specified time range with automatic
+        downsampling for longer periods
+      parameters:
+      - default: minute
+        description: 'Time range: minute (default), hour, day, week, or month'
+        in: query
+        name: range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.historyResponse'
+      summary: Get historical metrics
+      tags:
+      - Metrics
+  /packages:
+    get:
+      description: Return list of installed packages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.PackageListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List packages
+      tags:
+      - Packages
+  /packages/{name}:
+    get:
+      description: Retrieve detailed information about a specific package
+      parameters:
+      - description: Package name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Package information
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get package information
+      tags:
+      - Packages
+  /packages/install:
+    post:
+      consumes:
+      - application/json
+      description: Install one or more supported packages
+      parameters:
+      - description: Package names
+        in: body
+        name: packages
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Install packages
+      tags:
+      - Packages
+  /services/{name}/status:
+    get:
+      description: Return running status for a given service
+      parameters:
+      - description: Service name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ServiceStatusResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get service status
+      tags:
+      - Services
+  /services/action:
+    post:
+      consumes:
+      - application/json
+      description: Start/stop/restart/enable/disable a system service
+      parameters:
+      - description: Service action request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.ServiceActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ServiceStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Perform a service action
+      tags:
+      - Services
+  /services/install:
+    post:
+      consumes:
+      - application/json
+      description: Install a named service with specified domain and optional configuration
+      parameters:
+      - description: Service installation request with service, domain, and optional
+          config
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Installation output
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing required fields or invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Installation error with output
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Install a service
+      tags:
+      - Services
+  /setup/configure:
+    post:
+      consumes:
+      - application/json
+      description: Configure the dashboard with a domain name
+      parameters:
+      - description: Domain configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.SetupConfigureRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Configuration output and domain
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Configuration error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Configure dashboard
+      tags:
+      - Setup
+  /setup/status:
+    get:
+      description: Returns the current setup status of the dashboard
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get setup status
+      tags:
+      - Setup
+  /users:
+    get:
+      description: Returns a list of all users (requires DATABASE_URL to be configured)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with username and password (requires DATABASE_URL
+        to be configured)
+      parameters:
+      - description: Username and password
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Username already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new user
+      tags:
+      - Users
+  /users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: Update the password for a specific user (requires DATABASE_URL
+        to be configured)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New password
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      responses:
+        "204":
+          description: Password changed successfully
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Change user password
+      tags:
+      - Users
+swagger: "2.0"
