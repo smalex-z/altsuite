@@ -11,7 +11,6 @@ import {
   getServiceConfig,
   getServiceLogs,
   uninstallService,
-  serviceAction,
 } from '../lib/api';
 
 jest.mock('../lib/api', () => ({
@@ -30,7 +29,6 @@ const mockGetServiceStats = getServiceStats as jest.MockedFunction<typeof getSer
 const mockGetServiceConfig = getServiceConfig as jest.MockedFunction<typeof getServiceConfig>;
 const mockGetServiceLogs = getServiceLogs as jest.MockedFunction<typeof getServiceLogs>;
 const mockUninstallService = uninstallService as jest.MockedFunction<typeof uninstallService>;
-const mockServiceAction = serviceAction as jest.MockedFunction<typeof serviceAction>;
 
 function catalogApp(overrides: { id?: string; name?: string; installed?: boolean } = {}) {
   return {
