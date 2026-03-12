@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 func TestHealthHandler(t *testing.T) {
@@ -31,5 +33,24 @@ func TestCORSHeaders(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200 for OPTIONS, got %d", resp.StatusCode)
+	}
+}
+
+// TestGetServiceConfigHandler_InvalidServiceName ensures invalid service name returns 400.
+func TestGetServiceConfigHandler_InvalidServiceName(t *testing.T) {
+	// privOps must be set for the handler to run
+	privOps = NewPrivilegedOps()
+	defer func() { privOps = nil }()
+
+	r := mux.NewRouter()
+	r.HandleFunc("/api/services/{name}/config", getServiceConfigHandler).Methods("GET")
+
+	req := httptest.NewRequest("GET", "/api/services/invalid%20name/config", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected status 400 for invalid service name, got %d", resp.StatusCode)
 	}
 }

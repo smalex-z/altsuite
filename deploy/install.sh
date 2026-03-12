@@ -78,6 +78,10 @@ if [ "$MODE" = "altsuite" ]; then
     chmod +x "$INSTALL_DIR/deploy/install.sh"
     cp -f "$SCRIPT_DIR/configure-dashboard.sh" "$INSTALL_DIR/deploy/configure-dashboard.sh"
     chmod +x "$INSTALL_DIR/deploy/configure-dashboard.sh"
+    cp -f "$SCRIPT_DIR/rm-service-dir.sh" "$INSTALL_DIR/deploy/rm-service-dir.sh"
+    chmod +x "$INSTALL_DIR/deploy/rm-service-dir.sh"
+    cp -f "$SCRIPT_DIR/read-caddy-config.sh" "$INSTALL_DIR/deploy/read-caddy-config.sh"
+    chmod +x "$INSTALL_DIR/deploy/read-caddy-config.sh"
     cp -f "$SCRIPT_DIR/services/"*.sh "$INSTALL_DIR/deploy/services/"
     chmod +x "$INSTALL_DIR/deploy/services/"*.sh
     chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR/deploy"

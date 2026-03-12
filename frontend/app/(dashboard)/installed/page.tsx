@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Play,
   Square,
@@ -10,10 +11,36 @@ import {
   FileText,
   RotateCcw,
 } from 'lucide-react';
+import {
+  getCatalogApps,
+  getServiceStatus,
+  serviceAction,
+  getServiceLogs,
+  getServiceStats,
+  getServiceConfig,
+  uninstallService,
+  CatalogApp,
+  ServiceStats,
+  ServiceConfig,
+} from '@/lib/api';
+
+// Map catalog app display name to backend service name (allowedServices).
+const SERVICE_NAME_BY_APP: Record<string, string> = {
+  Mattermost: 'mattermost',
+  Outline: 'outline',
+  Gitea: 'gitea',
+  Penpot: 'penpot',
+  JitsiMeet: 'jitsimeet',
+};
+
+function getServiceName(appName: string): string | null {
+  return SERVICE_NAME_BY_APP[appName] ?? null;
+}
 
 interface AppData {
   id: string;
   name: string;
+  serviceName: string | null;
   status: 'running' | 'stopped';
   version: string;
   replaces: string;
@@ -25,93 +52,205 @@ interface AppData {
   appUrl?: string;
 }
 
-const MOCK_APPS: AppData[] = [
-  {
-    id: '1',
-    name: 'Mattermost',
+function catalogToAppData(app: CatalogApp): AppData {
+  return {
+    id: app.id,
+    name: app.name,
+    serviceName: getServiceName(app.name),
     status: 'running',
-    version: '7.8.0',
-    replaces: 'Slack Enterprise',
-    monthlySavings: 840,
-    users: 42,
-    uptime: '15d 8h',
-    memoryUsage: '2.4 GB',
-    cpuUsage: '12%',
-    appUrl: 'https://chat.example.com',
-  },
-  {
-    id: '2',
-    name: 'GitLab',
-    status: 'running',
-    version: '16.7.2',
-    replaces: 'GitHub Enterprise',
-    monthlySavings: 1050,
-    users: 28,
-    uptime: '23d 14h',
-    memoryUsage: '4.8 GB',
-    cpuUsage: '18%',
-    appUrl: 'https://git.example.com',
-  },
-  {
-    id: '3',
-    name: 'Outline',
-    status: 'running',
-    version: '0.4.5',
-    replaces: 'Notion Business',
-    monthlySavings: 600,
-    users: 15,
-    uptime: '8d 3h',
-    memoryUsage: '1.2 GB',
-    cpuUsage: '8%',
-    appUrl: 'https://Outline.example.com',
-  },
-  {
-    id: '4',
-    name: 'Jitsi Meet',
-    status: 'running',
-    version: '2.0.9220',
-    replaces: 'Zoom Business',
-    monthlySavings: 552,
-    users: 8,
-    uptime: '12d 19h',
-    memoryUsage: '1.8 GB',
-    cpuUsage: '15%',
-    appUrl: 'https://meet.example.com',
-  },
-];
-
-const MOCK_LOGS = '2024-02-20 10:33:14 [INFO] Mattermost service started\n2024-02-20 10:33:15 [INFO] Listening on 0.0.0.0:8065\n2024-02-20 10:33:16 [INFO] Database connection pool ready\n2024-02-20 10:33:17 [INFO] WebSocket server listening\n';
+    version: '—',
+    replaces: app.replaces,
+    monthlySavings: app.monthlySavings,
+    users: 0,
+    uptime: '—',
+    memoryUsage: '—',
+    cpuUsage: '—',
+  };
+}
 
 export default function InstalledAppsPage() {
-  const [apps, setApps] = useState<AppData[]>(MOCK_APPS);
+  const [apps, setApps] = useState<AppData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [logViewerApp, setLogViewerApp] = useState<string | null>(null);
   const [configApp, setConfigApp] = useState<string | null>(null);
   const [pendingUninstallId, setPendingUninstallId] = useState<string | null>(null);
+  const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [logsContent, setLogsContent] = useState<string>('');
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [statsByAppId, setStatsByAppId] = useState<Record<string, ServiceStats>>({});
+  const [configForPanel, setConfigForPanel] = useState<ServiceConfig | null>(null);
+  const [configPanelLoading, setConfigPanelLoading] = useState(false);
 
-  const toggleAppStatus = (id: string) => {
-    setApps((prev) => prev.map((app) => (app.id === id
-      ? {
-        ...app,
-        status:
-                app.status === 'running' ? ('stopped' as const) : ('running' as const),
-      }
-      : app)));
+  const refetchStatus = async (appId: string, serviceName: string) => {
+    try {
+      const res = await getServiceStatus(serviceName);
+      const isRunning = res.is_running === true;
+      setApps((prev) => prev.map((a) => (a.id === appId ? { ...a, status: isRunning ? 'running' : 'stopped' } : a)));
+    } catch {
+      setApps((prev) => prev.map((a) => (a.id === appId ? { ...a, status: 'stopped' as const } : a)));
+    }
+    try {
+      const stats = await getServiceStats(serviceName);
+      setStatsByAppId((prev) => ({ ...prev, [appId]: stats }));
+    } catch {
+      // ignore
+    }
   };
 
-  const handleRestart = (id: string) => {
-    // Placeholder: will call API when ready
+  useEffect(() => {
+    async function fetchInstalled() {
+      try {
+        const data = await getCatalogApps();
+        const installed = data.filter((app) => app.installed).map(catalogToAppData);
+        setApps(installed);
+        const statsMap: Record<string, ServiceStats> = {};
+        await Promise.all(
+          installed
+            .filter((app) => app.serviceName)
+            .map(async (app) => {
+              try {
+                const res = await getServiceStatus(app.serviceName!);
+                setApps((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: res.is_running ? 'running' : 'stopped' } : a)));
+              } catch {
+                setApps((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: 'stopped' as const } : a)));
+              }
+              try {
+                const stats = await getServiceStats(app.serviceName!);
+                statsMap[app.id] = stats;
+              } catch {
+                // ignore
+              }
+            }),
+        );
+        setStatsByAppId(statsMap);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching installed apps:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchInstalled();
+  }, []);
+
+  const toggleAppStatus = async (id: string) => {
     const app = apps.find((a) => a.id === id);
-    if (app) setLogViewerApp(app.name);
+    if (!app?.serviceName) return;
+    setActionError(null);
+    setActionInProgressId(id);
+    try {
+      await serviceAction(app.serviceName, app.status === 'running' ? 'stop' : 'start');
+      await refetchStatus(id, app.serviceName);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
+  const handleRestart = async (id: string) => {
+    const app = apps.find((a) => a.id === id);
+    if (!app?.serviceName) return;
+    setActionError(null);
+    setActionInProgressId(id);
+    try {
+      await serviceAction(app.serviceName, 'restart');
+      await refetchStatus(id, app.serviceName);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Restart failed');
+    } finally {
+      setActionInProgressId(null);
+    }
   };
 
   const handleUninstall = (id: string) => {
     setPendingUninstallId(id);
+    setActionError(null);
   };
 
-  const confirmUninstall = () => {
-    setApps((prev) => prev.filter((app) => app.id !== pendingUninstallId));
-    setPendingUninstallId(null);
+  const confirmUninstall = async () => {
+    const app = apps.find((a) => a.id === pendingUninstallId);
+    if (!app) {
+      setPendingUninstallId(null);
+      return;
+    }
+    const { serviceName } = app;
+    setActionError(null);
+    setActionInProgressId(app.id);
+    try {
+      if (serviceName) {
+        await uninstallService(serviceName, false);
+      }
+      setApps((prev) => prev.filter((a) => a.id !== pendingUninstallId));
+      setPendingUninstallId(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Uninstall failed');
+    } finally {
+      setActionInProgressId(null);
+    }
   };
+
+  const fetchLogsForApp = async (appName: string) => {
+    const app = apps.find((a) => a.name === appName);
+    if (!app?.serviceName) {
+      setLogsContent('Logs not available for this app.');
+      return;
+    }
+    setLogsLoading(true);
+    try {
+      const data = await getServiceLogs(app.serviceName, 200);
+      setLogsContent(data.logs);
+    } catch {
+      setLogsContent('Failed to load logs.');
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!logViewerApp) {
+      setLogsContent('');
+      return;
+    }
+    fetchLogsForApp(logViewerApp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when logViewerApp changes
+  }, [logViewerApp]);
+
+  useEffect(() => {
+    if (!configApp) {
+      setConfigForPanel(null);
+      return;
+    }
+    const app = apps.find((a) => a.name === configApp);
+    if (!app?.serviceName) {
+      setConfigForPanel(null);
+      return;
+    }
+    setConfigPanelLoading(true);
+    getServiceConfig(app.serviceName)
+      .then((c) => setConfigForPanel(c))
+      .catch(() => setConfigForPanel(null))
+      .finally(() => setConfigPanelLoading(false));
+  }, [configApp, apps]);
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Installed Applications
+          </h1>
+          <p className="text-gray-600">
+            Manage and monitor your self-hosted applications
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <p className="text-gray-500">Loading installed apps…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -122,6 +261,19 @@ export default function InstalledAppsPage() {
         <p className="text-gray-600">
           Manage and monitor your self-hosted applications
         </p>
+        {actionError && (
+          <div className="mt-3 px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center justify-between gap-2">
+            <span>{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-red-500 hover:text-red-700 shrink-0"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -181,12 +333,18 @@ export default function InstalledAppsPage() {
                 <button
                   type="button"
                   onClick={() => toggleAppStatus(app.id)}
-                  className={`p-2 rounded-lg border transition-colors ${
+                  disabled={!app.serviceName || actionInProgressId === app.id}
+                  className={`p-2 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     app.status === 'running'
                       ? 'border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100'
                       : 'border-green-200 bg-green-50 text-green-600 hover:bg-green-100'
                   }`}
-                  title={app.status === 'running' ? 'Stop' : 'Start'}
+                  title={
+                    (() => {
+                      if (!app.serviceName) return 'Not available for this app';
+                      return app.status === 'running' ? 'Stop' : 'Start';
+                    })()
+                  }
                 >
                   {app.status === 'running' ? (
                     <Square className="w-5 h-5" />
@@ -197,8 +355,9 @@ export default function InstalledAppsPage() {
                 <button
                   type="button"
                   onClick={() => setLogViewerApp(logViewerApp === app.name ? null : app.name)}
-                  className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
-                  title="View logs"
+                  disabled={!app.serviceName}
+                  className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={app.serviceName ? 'View logs' : 'Logs not available'}
                 >
                   <FileText className="w-5 h-5" />
                 </button>
@@ -224,8 +383,9 @@ export default function InstalledAppsPage() {
                 <button
                   type="button"
                   onClick={() => handleRestart(app.id)}
-                  className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
-                  title="Restart"
+                  disabled={!app.serviceName || actionInProgressId === app.id}
+                  className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={app.serviceName ? 'Restart' : 'Not available for this app'}
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
@@ -234,14 +394,16 @@ export default function InstalledAppsPage() {
                     <button
                       type="button"
                       onClick={confirmUninstall}
-                      className="px-3 py-1 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                      disabled={actionInProgressId === app.id}
+                      className="px-3 py-1 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
                       Confirm
                     </button>
                     <button
                       type="button"
                       onClick={() => setPendingUninstallId(null)}
-                      className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors"
+                      disabled={actionInProgressId === app.id}
+                      className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -250,7 +412,7 @@ export default function InstalledAppsPage() {
                   <button
                     type="button"
                     onClick={() => handleUninstall(app.id)}
-                    className="p-2 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                    className="p-2 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors hover:bg-red-100"
                     title="Uninstall"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -261,65 +423,97 @@ export default function InstalledAppsPage() {
 
             {logViewerApp === app.name && (
               <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                  Log viewer —
-                  {' '}
-                  {app.name}
-                  {' '}
-                  (demo)
-                </h4>
-                <pre className="text-xs text-gray-800 font-mono whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto">
-                  {MOCK_LOGS}
-                </pre>
-                <p className="text-xs text-gray-500 mt-2">
-                  Backend log streaming will be wired here when ready.
-                </p>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <h4 className="text-sm font-semibold text-gray-700">
+                    Log viewer —
+                    {' '}
+                    {app.name}
+                  </h4>
+                  <div className="flex gap-2">
+                    {app.serviceName && (
+                      <button
+                        type="button"
+                        onClick={() => fetchLogsForApp(app.name)}
+                        disabled={logsLoading}
+                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Refresh
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setLogViewerApp(null)}
+                      className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                {logsLoading ? (
+                  <p className="text-sm text-gray-500">Loading logs…</p>
+                ) : (
+                  <pre className="text-xs text-gray-800 font-mono whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto">
+                    {logsContent || 'No logs.'}
+                  </pre>
+                )}
               </div>
             )}
 
             {configApp === app.name && (
-              <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+              <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">
                   Configuration —
                   {' '}
                   {app.name}
-                  {' '}
-                  (demo)
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-gray-500">Port:</span>
-                    {' '}
-                    8065
+                {configPanelLoading ? (
+                  <p className="text-sm text-gray-900">Loading…</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-900">
+                    <div>
+                      <span className="font-medium">Port:</span>
+                      {' '}
+                      {configForPanel?.port ?? '—'}
+                    </div>
+                    <div>
+                      <span className="font-medium">Domain:</span>
+                      {' '}
+                      {configForPanel?.domain ?? '—'}
+                    </div>
+                    {configForPanel?.domain && (
+                      <div className="col-span-full">
+                        <a
+                          href={`https://${configForPanel.domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          Open https://
+                          {configForPanel.domain}
+                        </a>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <span className="text-gray-500">Domain:</span>
-                    {' '}
-                    chat.example.com
-                  </div>
-                  <p className="text-xs text-gray-500 col-span-full">
-                    Configuration review/edit will be wired to API when ready.
-                  </p>
-                </div>
+                )}
               </div>
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t border-gray-100">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Active Users</p>
-                <p className="font-semibold text-gray-900">{app.users}</p>
+                <p className="font-semibold text-gray-900">{app.users > 0 ? app.users : '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Uptime</p>
-                <p className="font-semibold text-gray-900">{app.uptime}</p>
+                <p className="font-semibold text-gray-900">{statsByAppId[app.id]?.uptime ?? app.uptime}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Memory</p>
-                <p className="font-semibold text-gray-900">{app.memoryUsage}</p>
+                <p className="font-semibold text-gray-900">{statsByAppId[app.id]?.memory_usage ?? app.memoryUsage}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">CPU Usage</p>
-                <p className="font-semibold text-gray-900">{app.cpuUsage}</p>
+                <p className="font-semibold text-gray-900">{statsByAppId[app.id]?.cpu_percent ?? app.cpuUsage}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Status</p>
@@ -335,12 +529,12 @@ export default function InstalledAppsPage() {
       {apps.length === 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <p className="text-gray-500 mb-4">No applications installed yet.</p>
-          <a
+          <Link
             href="/catalog"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Browse App Catalog
-          </a>
+          </Link>
         </div>
       )}
     </div>

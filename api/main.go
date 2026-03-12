@@ -40,6 +40,11 @@ type ServiceActionRequest struct {
 	Action      string `json:"action"` // start, stop, restart, enable, disable
 }
 
+type UninstallServiceRequest struct {
+	ServiceName   string `json:"service_name"`
+	RemoveVolumes bool   `json:"remove_volumes"`
+}
+
 type SetupConfigureRequest struct {
 	Domain string `json:"domain"`
 }
@@ -252,8 +257,12 @@ func main() {
 
 	// Service management endpoints
 	api.HandleFunc("/services/{name}/status", getServiceStatusHandler).Methods("GET")
+	api.HandleFunc("/services/{name}/logs", getServiceLogsHandler).Methods("GET")
+	api.HandleFunc("/services/{name}/stats", getServiceStatsHandler).Methods("GET")
+	api.HandleFunc("/services/{name}/config", getServiceConfigHandler).Methods("GET")
 	api.HandleFunc("/services/action", serviceActionHandler).Methods("POST")
 	api.HandleFunc("/services/install", installServiceHandler).Methods("POST")
+	api.HandleFunc("/services/uninstall", uninstallServiceHandler).Methods("POST")
 
 	// Package management endpoints
 	api.HandleFunc("/packages", listPackagesHandler).Methods("GET")
@@ -382,7 +391,7 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := privOps.SystemctlCommand(operation, req.ServiceName)
+	output, err := privOps.ServiceCommand(operation, req.ServiceName)
 
 	response := ServiceStatusResponse{
 		ServiceName: req.ServiceName,
@@ -396,6 +405,79 @@ func serviceActionHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Handler for service logs
+func getServiceLogsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceName := vars["name"]
+	tail := 200
+	if t := r.URL.Query().Get("tail"); t != "" {
+		if n, err := strconv.Atoi(t); err == nil && n > 0 {
+			tail = n
+		}
+	}
+	logs, err := privOps.GetServiceLogs(serviceName, tail)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"logs": logs})
+}
+
+// Handler for service stats (CPU, memory, uptime)
+func getServiceStatsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceName := vars["name"]
+	stats, err := privOps.GetServiceStats(serviceName)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
+// Handler for service config (domain, port from Caddy)
+func getServiceConfigHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceName := vars["name"]
+	config, err := privOps.GetServiceConfig(serviceName)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(config)
+}
+
+// Handler for service uninstall
+func uninstallServiceHandler(w http.ResponseWriter, r *http.Request) {
+	var req UninstallServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.ServiceName == "" {
+		http.Error(w, "service_name is required", http.StatusBadRequest)
+		return
+	}
+	if err := privOps.UninstallService(req.ServiceName, req.RemoveVolumes); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 // Handler for listing installed packages
@@ -487,6 +569,9 @@ func installServiceHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return
+	}
+	if err := SetInstalledStateByServiceName(req.Service, true); err != nil {
+		log.Printf("could not update installed state for service %q: %v", req.Service, err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

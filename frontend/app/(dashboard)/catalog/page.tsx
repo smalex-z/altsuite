@@ -76,59 +76,63 @@ export default function CatalogPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredApps.map((app) => (
-          <div
-            key={app.id}
-            className={`bg-white rounded-lg border-2 p-6 transition-all ${
-              // eslint-disable-next-line no-nested-ternary
-              app.available === false
-                ? 'border-gray-100 opacity-50'
-                : app.recommended ? 'border-blue-200 shadow-md' : 'border-gray-200'
-            }`}
-          >
-            <div className="flex items-start justify-between mb-3 gap-2">
-              <div className="min-w-0">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">
-                  {app.name}
-                </h3>
-                <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                  {app.category}
-                </span>
-              </div>
-              {app.installed && (
+        {filteredApps.map((app) => {
+          let cardClass = 'rounded-lg border-2 p-6 transition-all ';
+          if (app.installed) {
+            cardClass += 'bg-gray-50 border-gray-200 opacity-75';
+          } else if (app.recommended) {
+            cardClass += 'bg-white border-blue-200 shadow-md';
+          } else {
+            cardClass += 'bg-white border-gray-200';
+          }
+          return (
+            <div
+              key={app.id}
+              className={cardClass}
+            >
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">
+                    {app.name}
+                  </h3>
+                  <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                    {app.category}
+                  </span>
+                </div>
+                {app.installed && (
                 <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full shrink-0">
                   <Check className="w-4 h-4" />
                   Installed
                 </span>
-              )}
-            </div>
+                )}
+              </div>
 
-            <p className="text-gray-600 mb-4">{app.description}</p>
+              <p className="text-gray-600 mb-4">{app.description}</p>
 
-            <p className="text-sm text-gray-700 mb-4">
-              Replaces:
-              {' '}
-              <span className="font-semibold text-gray-900">{app.replaces}</span>
-            </p>
-
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
-                Key Features:
+              <p className="text-sm text-gray-700 mb-4">
+                Replaces:
+                {' '}
+                <span className="font-semibold text-gray-900">{app.replaces}</span>
               </p>
-              <ul className="space-y-1">
-                {app.features.map((feature) => (
-                  <li
-                    key={feature}
-                    className="flex items-center gap-2 text-sm text-gray-600"
-                  >
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            {app.requiredSpecs && (
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-gray-700 mb-2">
+                  Key Features:
+                </p>
+                <ul className="space-y-1">
+                  {app.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className="flex items-center gap-2 text-sm text-gray-600"
+                    >
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {app.requiredSpecs && (
               <div className="mb-4">
                 <p className="text-sm font-semibold text-gray-700 mb-2">
                   Required Specs:
@@ -151,38 +155,33 @@ export default function CatalogPage() {
                   </li>
                 </ul>
               </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => app.available !== false && handleInstall(app.id)}
-              disabled={app.installed || app.available === false}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                // eslint-disable-next-line no-nested-ternary
-                app.installed
-                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  : app.available === false
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {/* eslint-disable-next-line no-nested-ternary */}
-              {app.installed ? (
-                <>
-                  <Check className="w-5 h-5" />
-                  Already Installed
-                </>
-              ) : app.available === false ? (
-                'Coming Soon'
-              ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Ready to Install
-                </>
               )}
-            </button>
-          </div>
-        ))}
+
+              <button
+                type="button"
+                onClick={() => handleInstall(app.id)}
+                disabled={app.installed}
+                className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  app.installed
+                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {app.installed ? (
+                  <>
+                    <Check className="w-5 h-5" />
+                    Already Installed
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5" />
+                    Ready to Install
+                  </>
+                )}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

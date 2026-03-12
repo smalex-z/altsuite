@@ -53,6 +53,54 @@ export async function serviceAction(serviceName: string, action: 'start' | 'stop
   return res.json();
 }
 
+export async function getServiceLogs(
+  serviceName: string,
+  tail: number = 200,
+): Promise<{ logs: string }> {
+  const tailParam = tail !== 200 ? `?tail=${tail}` : '';
+  const url = `${API_BASE_URL}/api/services/${encodeURIComponent(serviceName)}/logs${tailParam}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch logs');
+  return data;
+}
+
+export interface ServiceStats {
+  cpu_percent?: string;
+  memory_usage?: string;
+  uptime?: string;
+}
+
+export async function getServiceStats(serviceName: string): Promise<ServiceStats> {
+  const res = await fetch(`${API_BASE_URL}/api/services/${encodeURIComponent(serviceName)}/stats`);
+  if (!res.ok) return {};
+  return res.json();
+}
+
+export interface ServiceConfig {
+  domain?: string;
+  port?: string;
+}
+
+export async function getServiceConfig(serviceName: string): Promise<ServiceConfig> {
+  const res = await fetch(`${API_BASE_URL}/api/services/${encodeURIComponent(serviceName)}/config`);
+  if (!res.ok) return {};
+  return res.json();
+}
+
+export async function uninstallService(
+  serviceName: string,
+  removeVolumes: boolean = false,
+): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/services/uninstall`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ service_name: serviceName, remove_volumes: removeVolumes }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Uninstall failed');
+}
+
 // System metrics
 export interface SystemMetric {
   timestamp: string;
