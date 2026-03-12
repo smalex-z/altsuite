@@ -53,16 +53,19 @@ export default function MattermostWizardPage() {
               <p className="text-gray-500">{domain}</p>
             </div>
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 mb-6">
             {'Caddy has been configured to proxy '}
             <strong>{domain}</strong>
-            {' → Mattermost. Visit '}
-            <strong>
-              https://
-              {domain}
-            </strong>
-            {' to create your first admin account.'}
+            {' → Mattermost. Create your first admin account at the link below.'}
           </p>
+          <a
+            href={`https://${domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Open Mattermost ↗
+          </a>
         </div>
       </div>
     );

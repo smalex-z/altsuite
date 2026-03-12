@@ -58,6 +58,7 @@ var dockerComposeFiles = map[string][]string{
 // serviceConfigKeys defines the ordered extra positional args each service script accepts beyond domain.
 var serviceConfigKeys = map[string][]string{
 	"mattermost": {"postgresPassword", "supportEmail"},
+	"gitea":      {"postgresPassword"},
 	"outline":    {"googleClientId", "googleClientSecret", "postgresPassword"},
 }
 

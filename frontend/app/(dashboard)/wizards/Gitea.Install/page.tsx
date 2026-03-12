@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import JitsiWizard from '@/app/components/wizards/jitsiWizard';
+import GiteaWizard from '@/app/components/wizards/giteaWizard';
 import { installService } from '@/lib/api';
 
 type InstallState = 'idle' | 'installing' | 'success' | 'error';
 
-export default function JitsiWizardPage() {
+export default function GiteaWizardPage() {
   const [installState, setInstallState] = useState<InstallState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [domain, setDomain] = useState('');
@@ -15,7 +15,9 @@ export default function JitsiWizardPage() {
     setDomain(data.domain);
     setInstallState('installing');
     try {
-      await installService('jitsimeet', data.domain, {});
+      await installService('gitea', data.domain, {
+        postgresPassword: data.postgresPassword,
+      });
       setInstallState('success');
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Installation failed');
@@ -28,9 +30,9 @@ export default function JitsiWizardPage() {
       <div className="max-w-4xl mx-auto p-8">
         <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Installing Jitsi Meet…</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Installing Gitea…</h2>
           <p className="text-gray-500">
-            Downloading containers and generating secure passwords. This may take several minutes.
+            Docker containers are being pulled and started. This may take a few minutes.
           </p>
         </div>
       </div>
@@ -46,26 +48,14 @@ export default function JitsiWizardPage() {
               ✓
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Jitsi Meet is running!</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Gitea is running!</h2>
               <p className="text-gray-500">{domain}</p>
             </div>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Action required: open UDP port 10001</p>
-            <p className="text-sm text-amber-700">
-              Jitsi Meet streams video directly over UDP. You must open port
-              {' '}
-              <strong>10001/UDP</strong>
-              {' '}
-              on your router or firewall (and in rathole/tunnel config if applicable).
-              Without this, meetings with more than 2 participants will not work.
-            </p>
-          </div>
           <p className="text-sm text-gray-500 mb-6">
-            Caddy has been configured with WebSocket support for
-            {' '}
+            {'Caddy has been configured to proxy '}
             <strong>{domain}</strong>
-            . Click below to start your first meeting.
+            {' → Gitea. Complete the setup wizard and create your first admin account at the link below.'}
           </p>
           <a
             href={`https://${domain}`}
@@ -73,7 +63,7 @@ export default function JitsiWizardPage() {
             rel="noopener noreferrer"
             className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
-            Open Jitsi Meet ↗
+            Open Gitea ↗
           </a>
         </div>
       </div>
@@ -102,18 +92,7 @@ export default function JitsiWizardPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8">
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-        <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ UDP port required before installing</p>
-        <p className="text-sm text-amber-700">
-          Jitsi streams video directly over UDP — this cannot go through an HTTP-only tunnel.
-          Make sure port
-          {' '}
-          <strong>10001/UDP</strong>
-          {' '}
-          is open on your router/firewall and forwarded to this server before proceeding.
-        </p>
-      </div>
-      <JitsiWizard onComplete={handleWizardComplete} />
+      <GiteaWizard onComplete={handleWizardComplete} />
     </div>
   );
 }

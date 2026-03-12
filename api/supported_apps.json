@@ -24,25 +24,25 @@
   },
   {
     "id": "2",
-    "name": "GitLab",
-    "description": "Complete DevOps platform with Git repository management, CI/CD pipelines, and issue tracking.",
+    "name": "Gitea",
+    "description": "Lightweight self-hosted Git service with repository management, issue tracking, and CI/CD via Gitea Actions.",
     "category": "Development",
     "replaces": "GitHub Enterprise",
     "monthlyCost": 0,
-    "monthlySavings": 1050,
+    "monthlySavings": 420,
     "features": [
       "Git repositories",
-      "CI/CD pipelines",
       "Issue tracking",
-      "Code review",
+      "Pull requests",
+      "Gitea Actions CI/CD",
       "Container registry"
     ],
     "recommended": true,
     "installed": false,
     "requiredSpecs": {
-      "cpu": "4 vCPU",
-      "memory": "8 GB",
-      "network": "20 Mbps"
+      "cpu": "1 vCPU",
+      "memory": "1 GB",
+      "network": "5 Mbps"
     }
   },
   {
@@ -108,6 +108,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "2 vCPU",
       "memory": "4 GB",
@@ -131,6 +132,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "2 vCPU",
       "memory": "2 GB",
@@ -154,6 +156,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "1 vCPU",
       "memory": "2 GB",
@@ -177,6 +180,7 @@
     ],
     "recommended": false,
     "installed": false,
+    "available": false,
     "requiredSpecs": {
       "cpu": "2 vCPU",
       "memory": "4 GB",

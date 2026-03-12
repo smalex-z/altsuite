@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Package, ShoppingBag, Server, Users,
+  LayoutDashboard, Package, ShoppingBag, Server, Users, LogOut,
 } from 'lucide-react';
-import { getSetupStatus } from '@/lib/api';
+import { getAuthStatus, logout } from '@/lib/api';
 
 const navItems = [
   {
@@ -30,14 +30,16 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // On first load, check if the dashboard domain has been configured.
-  // - Not configured → redirect to the setup wizard.
-  // - Configured but browser is on a different hostname (e.g. raw :8080) → redirect to the domain.
   useEffect(() => {
-    getSetupStatus()
+    getAuthStatus()
       .then((status) => {
-        if (!status.configured) {
+        if (status.userMgmtConfigured && !status.hasUsers) {
+          router.replace('/setup');
+        } else if (status.userMgmtConfigured && status.hasUsers && !status.authenticated) {
+          router.replace('/login');
+        } else if (!status.setupComplete) {
           router.replace('/setup');
         } else if (
           status.domain
@@ -46,10 +48,24 @@ export default function DashboardLayout({
           && window.location.hostname !== status.domain
         ) {
           window.location.href = `https://${status.domain}`;
+        } else {
+          setAuthChecked(true);
         }
       })
-      .catch(() => { /* API unreachable — let the dashboard load */ });
+      .catch(() => {
+        // API unreachable — let the dashboard load
+        setAuthChecked(true);
+      });
   }, [router]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login');
+  };
+
+  if (!authChecked) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -90,6 +106,17 @@ export default function DashboardLayout({
             })}
           </ul>
         </nav>
+
+        <div className="p-4 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            <span className="font-medium">Sign out</span>
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 overflow-auto">{children}</main>
