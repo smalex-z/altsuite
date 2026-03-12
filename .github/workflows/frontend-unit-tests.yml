@@ -1,0 +1,76 @@
+name: Frontend Unit Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, frontendUnitTests]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies and run tests
+        working-directory: frontend
+        run: |
+          npm install
+          npm test -- --coverage 2>&1 | tee test_output.txt
+
+      - name: Parse test results and comment
+        if: always()
+        working-directory: frontend
+        run: |
+          PASSED=$(grep -Eo '[0-9]+ passed' test_output.txt | tail -1 | awk '{print $1}' || echo 0)
+          FAILED=$(grep -Eo '[0-9]+ failed' test_output.txt | tail -1 | awk '{print $1}' || echo 0)
+          TOTAL=$(grep -Eo '[0-9]+ total' test_output.txt | tail -1 | awk '{print $1}' || echo 0)
+          COVERAGE="0.0%"
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(node -e "console.log(require('./coverage/coverage-summary.json').total.lines.pct + '%')")
+          elif [ -f coverage/lcov-report/index.html ]; then
+            COV=$(grep -oP 'All files.*?\K[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1 || echo "0.0")
+            COVERAGE="${COV}%"
+          fi
+
+          SUITES_LINE=$(grep '^Test Suites:' test_output.txt | tail -1 || echo 'Test Suites: 0 total')
+          TESTS_LINE=$(grep '^Tests:' test_output.txt | tail -1 || echo 'Tests: 0 total')
+          SNAPSHOTS_LINE=$(grep '^Snapshots:' test_output.txt | tail -1 || echo 'Snapshots: 0 total')
+          TIME_LINE=$(grep '^Time:' test_output.txt | tail -1 || echo 'Time: 0.0 s')
+
+          echo "Unit tests run: ${TOTAL:-0}" > summary.txt
+          echo "Unit tests passed: ${PASSED:-0}" >> summary.txt
+          echo "Unit tests failed: ${FAILED:-0}" >> summary.txt
+          echo "Test coverage: ${COVERAGE:-0.0%}" >> summary.txt
+          echo "" >> summary.txt
+          echo "${SUITES_LINE}" >> summary.txt
+          echo "${TESTS_LINE}" >> summary.txt
+          echo "${SNAPSHOTS_LINE}" >> summary.txt
+          echo "${TIME_LINE}" >> summary.txt
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            frontend/coverage
+            frontend/test_output.txt
+
+      - name: Comment test summary (PR only)
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          path: frontend/test_output.txt
