@@ -66,6 +66,7 @@ describe('CatalogPage', () => {
 
     // Click install button for AppOne -> should call redirect
     const installBtn = screen.getByRole('button', { name: 'Ready to Install' });
+    expect(installBtn).toBeInTheDocument();
     await userEvent.click(installBtn);
     const nav = jest.requireMock('next/navigation');
     expect(nav.redirect).toHaveBeenCalledWith('/wizards/AppOne.Install');
