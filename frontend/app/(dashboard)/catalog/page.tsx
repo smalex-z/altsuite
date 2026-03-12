@@ -80,7 +80,10 @@ export default function CatalogPage() {
           <div
             key={app.id}
             className={`bg-white rounded-lg border-2 p-6 transition-all ${
-              app.recommended ? 'border-blue-200 shadow-md' : 'border-gray-200'
+              // eslint-disable-next-line no-nested-ternary
+              app.available === false
+                ? 'border-gray-100 opacity-50'
+                : app.recommended ? 'border-blue-200 shadow-md' : 'border-gray-200'
             }`}
           >
             <div className="flex items-start justify-between mb-3 gap-2">
@@ -152,19 +155,25 @@ export default function CatalogPage() {
 
             <button
               type="button"
-              onClick={() => handleInstall(app.id)}
-              disabled={app.installed}
+              onClick={() => app.available !== false && handleInstall(app.id)}
+              disabled={app.installed || app.available === false}
               className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                // eslint-disable-next-line no-nested-ternary
                 app.installed
                   ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : app.available === false
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
+              {/* eslint-disable-next-line no-nested-ternary */}
               {app.installed ? (
                 <>
                   <Check className="w-5 h-5" />
                   Already Installed
                 </>
+              ) : app.available === false ? (
+                'Coming Soon'
               ) : (
                 <>
                   <Download className="w-5 h-5" />

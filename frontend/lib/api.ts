@@ -10,6 +10,7 @@ export interface CatalogApp {
   features: string[];
   recommended: boolean;
   installed: boolean;
+  available?: boolean;
   requiredSpecs?: {
     cpu: string;
     memory: string;

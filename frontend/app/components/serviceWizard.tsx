@@ -148,7 +148,7 @@ function ServiceWizard({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="flex flex-col bg-gray-50 rounded-lg">
       {/* Progress Bar */}
       <div className="w-full bg-gray-200 h-2">
         <div

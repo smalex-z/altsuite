@@ -74,6 +74,15 @@ uninstall_service() {
                     docker compose down -v || true
                 fi
                 ;;
+            jitsimeet)
+                echo "Stopping Jitsi Meet containers..."
+                cd "$SERVICE_DIR"
+                docker compose down || true
+                if [[ "$REMOVE_VOLUMES" =~ ^[Yy]$ ]]; then
+                    docker compose down -v || true
+                    rm -rf "$SERVICE_DIR/.jitsi-meet-cfg"
+                fi
+                ;;
             *)
                 # Generic: stop docker compose if a compose file exists
                 if [ -f "$SERVICE_DIR/docker-compose.yml" ] || [ -f "$SERVICE_DIR/docker-compose.yaml" ]; then
