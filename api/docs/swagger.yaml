@@ -22,6 +22,19 @@ definitions:
       range:
         type: string
     type: object
+  main.AuthStatusResponse:
+    properties:
+      authenticated:
+        type: boolean
+      domain:
+        type: string
+      hasUsers:
+        type: boolean
+      setupComplete:
+        type: boolean
+      userMgmtConfigured:
+        type: boolean
+    type: object
   main.HealthResponse:
     properties:
       status:
@@ -94,6 +107,13 @@ definitions:
       requiredSpecs:
         $ref: '#/definitions/main.Spec'
     type: object
+  main.UninstallServiceRequest:
+    properties:
+      remove_volumes:
+        type: boolean
+      service_name:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -108,6 +128,115 @@ info:
   title: Altsuite API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with username and password to create a session
+      parameters:
+      - description: Username and password
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User information and session created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Clear user session and invalidate authentication
+      responses:
+        "204":
+          description: Logout successful
+      summary: User logout
+      tags:
+      - Auth
+  /auth/setup:
+    post:
+      consumes:
+      - application/json
+      description: Create the initial admin user for the system (only works when no
+        users exist)
+      parameters:
+      - description: Username and password for first admin user
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Admin user created and session established
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request or setup already complete
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Username already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: User management not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create first admin user
+      tags:
+      - Auth
+  /auth/status:
+    get:
+      description: Check current authentication status and system setup state
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication and setup status
+          schema:
+            $ref: '#/definitions/main.AuthStatusResponse'
+      summary: Get authentication status
+      tags:
+      - Auth
   /docker/containers:
     get:
       description: List all Docker containers running on the system
@@ -261,6 +390,89 @@ paths:
       summary: Install packages
       tags:
       - Packages
+  /services/{name}/config:
+    get:
+      description: Retrieve domain and port configuration for a specific service
+      parameters:
+      - description: Service name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service configuration
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Error retrieving configuration
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get service configuration
+      tags:
+      - Services
+  /services/{name}/logs:
+    get:
+      description: Retrieve logs for a specific service with optional tail limit
+      parameters:
+      - description: Service name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: 'Number of log lines to retrieve (default: 200)'
+        in: query
+        name: tail
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service logs
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error retrieving logs
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get service logs
+      tags:
+      - Services
+  /services/{name}/stats:
+    get:
+      description: Retrieve CPU, memory, and uptime statistics for a specific service
+      parameters:
+      - description: Service name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service statistics
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error retrieving stats
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get service stats
+      tags:
+      - Services
   /services/{name}/status:
     get:
       description: Return running status for a given service
@@ -348,6 +560,42 @@ paths:
             additionalProperties: true
             type: object
       summary: Install a service
+      tags:
+      - Services
+  /services/uninstall:
+    post:
+      consumes:
+      - application/json
+      description: Remove a service installation with optional volume deletion
+      parameters:
+      - description: Service name and volume removal preference
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.UninstallServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Uninstall successful
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request or missing service name
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Uninstall error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Uninstall a service
       tags:
       - Services
   /setup/configure:
